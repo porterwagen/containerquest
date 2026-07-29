@@ -99,7 +99,7 @@ export const CHAPTER_3: Lesson[] = [
     concept: [
       "Here's a rule that seems small and turns out to be structural: an image should be identical everywhere it runs. The exact same image in development, staging, and production.",
       "That's the entire value proposition. If you build a different image per environment, you're testing something you're not shipping, and the whole guarantee collapses.",
-      "But environments obviously differ — different database addresses, different credentials, different log levels. So how do you keep one image while changing behaviour?",
+      "But environments obviously differ — different database addresses, different credentials, different log levels. So how do you keep one image while changing behavior?",
       "You inject settings at STARTUP, not build time. Environment variables are the usual mechanism: the image ships with sensible defaults, and whoever runs it overrides what needs overriding.",
       "This is why you'll see database URLs and API keys passed in as environment variables rather than baked into files. It's also, importantly, how secrets stay out of images — anything baked into an image is readable by anyone who has that image, permanently, including in layers you thought you deleted.",
       "One caution worth carrying to real work: environment variables are visible to anyone who can inspect the container. They're fine for addresses and settings, and they're the bare minimum for secrets. Production systems generally use a dedicated secret manager instead.",
@@ -114,7 +114,7 @@ export const CHAPTER_3: Lesson[] = [
       },
       {
         instruction:
-          "Run the Python image with a different version setting, and watch it report the new value. Same image, different behaviour.",
+          "Run the Python image with a different version setting, and watch it report the new value. Same image, different behavior.",
         command:
           "docker run --rm -e SERVICE_VERSION=9.9.9 --entrypoint sh quest/ai:dev -c 'echo \"this container thinks it is version $SERVICE_VERSION\"'",
         saw: "9.9.9 — a version that exists nowhere in the image. You changed how the container behaves without rebuilding anything. That's the whole technique.",
@@ -122,7 +122,7 @@ export const CHAPTER_3: Lesson[] = [
       },
     ],
     takeaway:
-      "Build one image, configure it at startup. Same bytes in every environment, behaviour supplied from outside.",
+      "Build one image, configure it at startup. Same bytes in every environment, behavior supplied from outside.",
   },
 
   {

@@ -6,7 +6,7 @@ grows: slow, memory-hungry, and CPU-bound in bursts. The inference here is
 simulated (deterministic hashing, not a real model), because the lesson is
 about how such a service is packaged and scheduled — not about the model.
 
-It is the interesting neighbour in the fleet: the Go service starts in
+It is the interesting neighbor in the fleet: the Go service starts in
 milliseconds and the C service is 187 kB, while this one drags an entire
 language runtime and its site-packages along. The Ledger view makes that
 contrast concrete.

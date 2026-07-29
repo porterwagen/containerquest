@@ -8,7 +8,7 @@ import type { LogLine } from "@/lib/useEventStream";
  * Fed by the Docker daemon's own event stream, so a container dying appears
  * here the instant it happens — not on the next poll. Those sub-second moments
  * between "died" and "started again" are exactly where the interesting
- * behaviour lives, and polling reliably misses them.
+ * behavior lives, and polling reliably misses them.
  */
 
 const LEVEL: Record<LogLine["level"], string> = {

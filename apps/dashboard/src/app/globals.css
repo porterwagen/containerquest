@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Mission control: near-black canvas, one accent per meaning, telemetry in
-   monospace. Colour is never decorative here — it always encodes state. */
+   monospace. Color is never decorative here — it always encodes state. */
 @theme {
   --color-void: #07090c;
   --color-panel: #0d1116;
@@ -18,7 +18,7 @@
   --color-dead: #f87171;
   --color-beam: #38bdf8;
 
-  /* One colour per language, used consistently everywhere. */
+  /* One color per language, used consistently everywhere. */
   --color-lang-typescript: #4a9eff;
   --color-lang-python: #ffd43b;
   --color-lang-go: #00b8d4;

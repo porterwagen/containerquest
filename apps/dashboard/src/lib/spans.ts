@@ -16,7 +16,7 @@ let writer: Redis | null = null;
 /**
  * One lazily-created connection, reused. Reconnects are ioredis's problem.
  *
- * The error handler is attached INSIDE the initialisation, not after it.
+ * The error handler is attached INSIDE the initialization, not after it.
  * Attaching it on every call added a listener per span and tripped Node's
  * MaxListenersExceededWarning — which is not a spurious warning here, it was
  * a genuine leak that grew for as long as the process ran.

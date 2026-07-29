@@ -39,7 +39,7 @@ export function ServiceCard({ entry, index }: { entry: FleetEntry; index: number
       className="fade-up relative overflow-hidden rounded-xl border border-edge bg-panel p-4 transition-colors hover:border-edge-bright"
       style={{ animationDelay: `${index * 55}ms` }}
     >
-      {/* Language stripe — the same colour follows this service everywhere. */}
+      {/* Language stripe — the same color follows this service everywhere. */}
       <div className="absolute inset-x-0 top-0 h-px" style={{ background: lang, opacity: 0.55 }} />
 
       <header className="flex items-start justify-between gap-3">

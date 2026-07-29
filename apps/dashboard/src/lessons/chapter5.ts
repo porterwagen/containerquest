@@ -88,7 +88,7 @@ export const CHAPTER_5: Lesson[] = [
       },
     ],
     takeaway:
-      "Kubernetes injects a pod's own identity and location into it, which is what makes it possible to trace behaviour back to one specific instance.",
+      "Kubernetes injects a pod's own identity and location into it, which is what makes it possible to trace behavior back to one specific instance.",
   },
 
   {
@@ -187,7 +187,7 @@ export const CHAPTER_5: Lesson[] = [
       "maxSurge — how many EXTRA pods may exist during the update. Set to 1, you may temporarily run one more than you asked for.",
       "maxUnavailable — how many fewer than desired you'll tolerate. Set to 0, capacity never drops below the target.",
       "With surge 1 and unavailable 0, the sequence is: start one new pod, WAIT for its readiness probe to pass, then retire one old pod, repeat. Capacity never dips. Old and new run side by side for a few seconds — which is worth knowing, because it means your two versions must be able to coexist briefly. Database migrations in particular need care for exactly this reason.",
-      "If a new pod never becomes ready, the rollout stops and waits rather than continuing to destroy working pods. A broken deploy stalls instead of taking you down — that behaviour alone justifies a lot of the complexity.",
+      "If a new pod never becomes ready, the rollout stops and waits rather than continuing to destroy working pods. A broken deploy stalls instead of taking you down — that behavior alone justifies a lot of the complexity.",
       "This is the payoff for the readiness probe from Chapter 4. Without it Kubernetes couldn't tell whether a new pod was actually working, and the whole no-downtime guarantee would be a guess.",
     ],
     steps: [
@@ -216,7 +216,7 @@ export const CHAPTER_5: Lesson[] = [
         instruction:
           "One more thing worth knowing: Kubernetes keeps the previous version, so undoing a bad deploy is one command.",
         command: "kubectl rollout undo deployment/compute -n container-quest",
-        saw: "\"rolled back\". Same gradual, no-downtime process in reverse. This is the command you want to have practised before the day you actually need it at 2am.",
+        saw: "\"rolled back\". Same gradual, no-downtime process in reverse. This is the command you want to have practiced before the day you actually need it at 2am.",
         check: { kind: "manual", label: "I rolled it back" },
       },
     ],

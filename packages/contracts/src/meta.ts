@@ -17,7 +17,7 @@ export const ServiceMeta = z.object({
   service: z.string(),
   language: Language,
 
-  /** Bumped on rollout. The dashboard colours pods by this during a deploy. */
+  /** Bumped on rollout. The dashboard colors pods by this during a deploy. */
   version: z.string(),
   gitSha: z.string(),
   buildTime: z.string(),

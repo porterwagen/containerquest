@@ -90,7 +90,7 @@ func targetName(rawURL string) string {
 	return host
 }
 
-// instrument counts requests, honours the "slow" chaos action, propagates the
+// instrument counts requests, honors the "slow" chaos action, propagates the
 // trace id, and logs timing — the Go equivalent of middleware, without a
 // framework. A handler is just a function, so wrapping one is just a closure.
 func instrument(next http.HandlerFunc) http.HandlerFunc {

@@ -4,7 +4,7 @@ import type { Lesson } from "./types";
  * Chapter 6 — Ship something of your own.
  *
  * The transfer chapter. Everything so far has been on a system someone else
- * built; here you containerise a program you wrote and put it on the cluster.
+ * built; here you containerize a program you wrote and put it on the cluster.
  * The lessons deliberately create a throwaway app so the steps work for
  * everyone, and then explain how to swap in your real project.
  */
@@ -14,7 +14,7 @@ export const CHAPTER_6: Lesson[] = [
     id: "own-dockerfile",
     chapter: 6,
     chapterTitle: "Ship your own app",
-    title: "Containerise a program you wrote",
+    title: "Containerize a program you wrote",
     minutes: 12,
     concept: [
       "Everything so far has been someone else's system. Now you'll take a program, write the instructions to package it, and get a container running from it.",
@@ -137,6 +137,6 @@ export const CHAPTER_6: Lesson[] = [
       },
     ],
     takeaway:
-      "You can containerise an app, deploy it redundantly, scale it, and update it without downtime. Next: ConfigMaps, Ingress, resource limits — and knowing when a single server is the better answer.",
+      "You can containerize an app, deploy it redundantly, scale it, and update it without downtime. Next: ConfigMaps, Ingress, resource limits — and knowing when a single server is the better answer.",
   },
 ];

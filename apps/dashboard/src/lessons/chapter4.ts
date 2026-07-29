@@ -4,7 +4,7 @@ import type { Lesson } from "./types";
  * Chapter 4 — When things break.
  *
  * The most practical chapter. Everything here is a move you'd make during a
- * real incident, practised on a system where breaking things is free.
+ * real incident, practiced on a system where breaking things is free.
  */
 
 export const CHAPTER_4: Lesson[] = [
@@ -18,7 +18,7 @@ export const CHAPTER_4: Lesson[] = [
       "This is the situation you'll hit most often in real work: you deploy something, and it doesn't come up. Here is the routine, in order. It resolves the large majority of cases.",
       "STEP 1 — Is it running at all? `docker ps` shows running containers. `docker ps -a` shows stopped ones too. If your container is in the second list and not the first, it started and died, which is very different from never starting.",
       "STEP 2 — What did it say? `docker logs <name>` shows everything the program printed, including after it died. The reason is almost always right here. People skip this step constantly and lose hours to it.",
-      "STEP 3 — Why did it exit? An exit code of 0 means it finished normally and had nothing more to do — usually a configuration mistake where you ran a one-shot command instead of a server. Anything non-zero means it crashed. Code 137 specifically means it was killed for using too much memory, which is worth memorising because it's otherwise baffling.",
+      "STEP 3 — Why did it exit? An exit code of 0 means it finished normally and had nothing more to do — usually a configuration mistake where you ran a one-shot command instead of a server. Anything non-zero means it crashed. Code 137 specifically means it was killed for using too much memory, which is worth memorizing because it's otherwise baffling.",
       "STEP 4 — Go inside and look. `docker exec -it <name> sh` gives you a shell in a RUNNING container. If it's already dead you can't do this, which is why you sometimes start it with a shell as its command instead, just to poke around.",
       "You're going to run through this on a container that's genuinely broken.",
     ],

@@ -17,8 +17,8 @@ export const CHAPTER_0: Lesson[] = [
     title: "The map: how all these words fit together",
     minutes: 6,
     concept: [
-      "The hardest part of learning this isn't any single idea — it's that six unfamiliar words arrive at once and nobody says which contains which. Here is the map. You don't need to memorise it; you'll build the real understanding by doing. But it helps to know roughly where you're going.",
-      "Start with the thing at the centre: a CONTAINER is one running program, wrapped so it can't see the rest of your machine. That's the atom. Everything else is either how you make one, or how you manage a lot of them.",
+      "The hardest part of learning this isn't any single idea — it's that six unfamiliar words arrive at once and nobody says which contains which. Here is the map. You don't need to memorize it; you'll build the real understanding by doing. But it helps to know roughly where you're going.",
+      "Start with the thing at the center: a CONTAINER is one running program, wrapped so it can't see the rest of your machine. That's the atom. Everything else is either how you make one, or how you manage a lot of them.",
       "An IMAGE is the template a container is made from — a frozen snapshot of files plus a startup command. Images sit on disk. Containers run. Same relationship as a recipe and a meal, or a class and an object.",
       "A REGISTRY is a shared place to store images, so a machine that has never seen your code can download and run it. Docker Hub is the public one; most companies run a private one. This is how an image gets from your laptop to a server.",
       "DOCKER is the tool that builds images and runs containers on one machine. When you type `docker`, you're talking to it. It handles a single computer and has no opinion about anything beyond that.",
@@ -72,7 +72,7 @@ export const CHAPTER_0: Lesson[] = [
       },
       {
         instruction:
-          "Ask the Go service to report on its neighbours. It calls the Python and C services and collects their answers.",
+          "Ask the Go service to report on its neighbors. It calls the Python and C services and collects their answers.",
         command: "curl -s localhost:8080/aggregate",
         saw: "One request from you turned into several requests between services. That's the shape of a real system — and it's why you need tooling to see inside it, because a single request now touches multiple programs and any one of them can be the problem.",
         check: { kind: "requests", service: "util", delta: 1 },

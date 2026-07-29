@@ -62,7 +62,7 @@ export interface QuestDriver {
  *
  * When a control is unavailable the dashboard explains *why* — "Compose has no
  * concept of a rolling update; switch to Kubernetes mode" teaches more than a
- * greyed-out button ever could.
+ * grayed-out button ever could.
  */
 export const CAPABILITY_NOTES: Record<keyof DriverCapabilities, string> = {
   reschedules:

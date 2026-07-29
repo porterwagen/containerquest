@@ -4,7 +4,7 @@ import type { QuestEvent, Replica, ChaosAction } from "@quest/contracts";
 import { newTraceId } from "@quest/contracts";
 
 /**
- * SimDriver — the whole platform, modelled in the browser.
+ * SimDriver — the whole platform, modeled in the browser.
  *
  * This is what makes Container Quest shareable. It emits the exact same
  * QuestEvent stream as the real Docker and Kubernetes drivers, so the public

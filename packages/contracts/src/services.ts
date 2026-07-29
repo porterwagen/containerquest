@@ -51,7 +51,7 @@ export const SERVICES: ServiceDef[] = [
     language: "python",
     port: 8000,
     hostPort: 8000,
-    role: "FastAPI. Simulated embeddings and inference — the slow, memory-hungry neighbour.",
+    role: "FastAPI. Simulated embeddings and inference — the slow, memory-hungry neighbor.",
     dependsOn: ["redis"],
     baseImage: "python:3.13-slim",
   },
