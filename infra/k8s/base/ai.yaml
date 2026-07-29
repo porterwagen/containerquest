@@ -1,0 +1,90 @@
+# The ai service, on Kubernetes.
+#
+# Compare this with the six lines it took in docker-compose.yml. Kubernetes is
+# more verbose because it is answering harder questions: how many copies, on
+# which machines, how do we know one is healthy, what happens during an update.
+# Compose never had to ask any of those.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai
+  labels: { app: ai }
+spec:
+  # How many copies you want. Not how many to start — how many should EXIST.
+  # Kubernetes will keep making this true, forever, without being asked again.
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1          # may run 1 extra pod during an update
+      maxUnavailable: 0    # but never drop below the desired count
+
+  # How the Deployment finds the pods it owns. Must match the labels below.
+  selector:
+    matchLabels: { app: ai }
+
+  template:
+    metadata:
+      labels: { app: ai }
+    spec:
+      containers:
+        - name: ai
+          image: quest/ai:dev
+          # Never pull from the internet — this image was built locally and
+          # side-loaded into the cluster. Without this, Kubernetes tries
+          # Docker Hub, fails, and the pod sits in ImagePullBackOff forever.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+
+          # Liveness: is the process alive? If this fails, the container is
+          # KILLED and restarted. Only check whether you yourself are working.
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 2
+            periodSeconds: 10
+
+          # Readiness: should traffic come here? If this fails, the pod is
+          # removed from the Service and gets no requests — but is NOT
+          # restarted. This split is the thing Compose could not express.
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8000 }
+            initialDelaySeconds: 1
+            periodSeconds: 5
+
+          env:
+            - name: SERVICE_VERSION
+              value: "1.0.0"
+            # The Downward API: how a pod learns its own name and location.
+            # Under plain Docker these were null. Now they have values, and
+            # the dashboard's parity table shows the difference.
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+
+          resources:
+            # requests = what the scheduler reserves when choosing a machine.
+            # limits   = the hard ceiling before throttling or being killed.
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { cpu: 500m, memory: 384Mi }
+
+---
+# A Service is a stable name and address in front of a changing set of pods.
+# Pods come and go constantly; this does not. Anything in the cluster can
+# reach these pods at the DNS name "ai" and never think about it again.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai
+spec:
+  type: NodePort
+  selector: { app: ai }   # any pod with this label is a target
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30080          # reachable from your Mac at localhost:30090

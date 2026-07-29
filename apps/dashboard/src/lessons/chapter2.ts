@@ -1,0 +1,159 @@
+import type { Lesson } from "./types";
+
+/**
+ * Chapter 2 — Images: what's inside, and why size matters.
+ *
+ * The most practically useful chapter in the course. Build times and image
+ * sizes are the two things developers feel every single day, and both come
+ * down to a handful of rules about layers and ordering.
+ */
+
+export const CHAPTER_2: Lesson[] = [
+  {
+    id: "layers",
+    chapter: 2,
+    chapterTitle: "Images and how they're built",
+    title: "An image is a stack of layers",
+    minutes: 7,
+    concept: [
+      "An image isn't one big blob. It's a stack of layers, each one recording the changes made on top of the layer beneath it. Install a package: that's a layer. Copy your code in: another layer. Set a setting: another.",
+      "This matters for two very practical reasons.",
+      "First, SHARING. Layers are content-addressed, so identical layers are stored once and reused everywhere. If ten of your images all start from the same base, that base is downloaded and stored a single time. This is why pulling your second image from a registry is usually much faster than the first.",
+      "Second, CACHING. When you rebuild, Docker reuses every layer whose inputs haven't changed and only redoes the rest. Structure your build well and a rebuild takes two seconds; structure it badly and the same rebuild takes two minutes. That difference is entirely under your control, and it's the subject of the next lesson.",
+      "One consequence catches everyone eventually: layers are additive, so deleting a file in a later layer doesn't shrink the image. The file is still sitting in the earlier layer, just hidden. If you copy a secret in and then delete it, it's still in there and anyone with the image can dig it out.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Look at the layers of the Go service's image. Each row is one build instruction.",
+        command: "docker history quest/util:dev --format 'table {{.Size}}\\t{{.CreatedBy}}' | head -12",
+        saw: "A handful of layers, most of them 0 B. The 0 B ones are metadata — setting a port or a startup command changes no files, so there's nothing to store. Only the layers that actually add files have a size.",
+        check: { kind: "manual", label: "I saw the layer list" },
+      },
+      {
+        instruction: "Now compare total sizes across all five services.",
+        command:
+          "docker images --filter reference='quest/*' --format 'table {{.Repository}}\\t{{.Size}}'",
+        saw: "From about 187 kB to over 300 MB — a spread of more than 1,500x. All five do essentially the same job: listen on a port and answer HTTP requests. The next lesson is entirely about where that difference comes from, and it is the single most useful thing in this chapter.",
+        check: { kind: "manual", label: "I compared the sizes" },
+      },
+    ],
+    takeaway:
+      "An image is a stack of layers. Identical layers are shared between images, and unchanged layers are reused on rebuild — which is why build structure determines build speed.",
+  },
+
+  {
+    id: "multi-stage",
+    chapter: 2,
+    chapterTitle: "Images and how they're built",
+    title: "Why one image is 187 kB and another is 300 MB",
+    minutes: 9,
+    concept: [
+      "Here's the trap almost everyone falls into. To build a program you need a lot of tools: a compiler, package managers, build scripts, development libraries. To RUN the finished program you usually need almost none of that.",
+      "But if you build inside your image the naive way, all those tools ship to production with you. Your 5 MB program arrives inside a 900 MB image, 99% of which is a compiler that will never be used again.",
+      "The fix is called a MULTI-STAGE BUILD, and it's the most valuable single technique in this chapter. You use one image to do the building, then start a second, clean image and copy only the finished program into it. The toolchain stays behind.",
+      "The C service in this project takes it to the extreme. It's built inside a full Linux system with a compiler — around 250 MB — and then the finished program is copied into a completely empty image. Not a small Linux. Empty. No shell, no package manager, no operating system files at all. Just one program, 187 kB.",
+      "This isn't a stunt. Smaller images deploy faster, cost less to store, and — importantly — have less in them to be vulnerable. An image with no shell is one an attacker can't get a shell in.",
+      "Why is the dashboard 300 MB then? Because JavaScript genuinely needs its runtime present to run. Same for Python. This isn't sloppiness; some languages compile to a self-contained program and some don't. Knowing which you're dealing with tells you what's achievable.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Confirm the C service really is that small, and see how much bigger its build tools were.",
+        command:
+          "docker images --format 'table {{.Repository}}:{{.Tag}}\\t{{.Size}}' | grep -E 'quest/compute|alpine|REPO'",
+        saw: "The finished image next to the Alpine base its build stage used. The build environment is well over a hundred times larger than the result. All of it was thrown away.",
+        check: { kind: "manual", label: "I compared build vs final size" },
+      },
+      {
+        instruction:
+          "Prove there's genuinely no operating system in the C service's image. This tries to open a shell inside it.",
+        command: "docker exec container-quest-compute-1 sh",
+        saw: "It failed — there is no `sh` to run. That error IS the correct result. There is no shell in that image because there's no operating system at all. Practically: you can't debug it by going inside, and an attacker can't either. That's the trade.",
+        check: { kind: "manual", label: "I saw it fail to find a shell" },
+      },
+      {
+        instruction: "Compare with the Python service, which does have a full OS inside it.",
+        command: "docker exec container-quest-ai-1 sh -c 'cat /etc/os-release | head -2'",
+        saw: "Debian. The Python image carries a real Linux distribution because the Python interpreter needs it. Two containers on the same machine, one with an entire OS inside and one with literally nothing — and Docker runs both identically.",
+        check: { kind: "manual", label: "I saw the Debian version" },
+      },
+    ],
+    takeaway:
+      "Build with one image, ship with another. Keep the compiler out of production and images shrink by orders of magnitude.",
+    source: {
+      path: "services/compute/Dockerfile",
+      note: "Twelve lines, and the whole technique is visible in them if you ever want to look.",
+    },
+  },
+
+  {
+    id: "build-cache",
+    chapter: 2,
+    chapterTitle: "Images and how they're built",
+    title: "Build caching, and why instruction order matters",
+    minutes: 9,
+    concept: [
+      "This is the lesson that will save you the most time per week in real work.",
+      "When Docker rebuilds an image, it walks the instructions in order and reuses each layer whose inputs are unchanged. The moment it hits one that HAS changed, it rebuilds that layer and every single layer after it — no exceptions, even if those later ones would have been identical.",
+      "So one rule follows from that: put the things that rarely change EARLY, and the things that change constantly LATE.",
+      "Your dependency list changes maybe once a month. Your source code changes every few minutes. So you copy the dependency list in and install dependencies FIRST, and only then copy your source. Now editing a file rebuilds one fast layer, and the slow dependency install stays cached.",
+      "Get this backwards — copy everything in at once, then install — and every one-character change to any file re-downloads all your dependencies. That's the difference between a 3-second rebuild and a 3-minute one, and it's an extremely common mistake.",
+      "You're going to feel this directly, by timing two rebuilds.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Rebuild the Go service with nothing changed. Everything should come from cache.",
+        command:
+          "cd ~/Documents/containerquest && time docker build -q -t quest/util:dev services/util",
+        saw: "Under a second or so, and the time is mostly Docker starting up. Nothing changed, so nothing was rebuilt — every layer was reused.",
+        check: { kind: "manual", label: "It finished almost instantly" },
+      },
+      {
+        instruction:
+          "Now change one line of source code — just a comment — and rebuild. This edits the file, rebuilds, then puts it back exactly as it was.",
+        command:
+          "cd ~/Documents/containerquest && echo '// cache test' >> services/util/main.go && time docker build -q -t quest/util:dev services/util && git checkout services/util/main.go",
+        saw: "Noticeably slower — several seconds. Changing the source invalidated the layer that copies source in, so the compile had to run again. But notice what did NOT happen: it didn't re-download the Go dependencies, because that layer sits earlier in the file and its inputs were untouched. That's the ordering rule paying off.",
+        check: { kind: "manual", label: "The second build took longer" },
+      },
+    ],
+    takeaway:
+      "Docker rebuilds from the first changed instruction onward. Put rarely-changing things first, frequently-changing things last, and rebuilds stay fast.",
+  },
+
+  {
+    id: "registries",
+    chapter: 2,
+    chapterTitle: "Images and how they're built",
+    title: "Registries: how an image leaves your laptop",
+    minutes: 6,
+    concept: [
+      "You've been building images locally. Real deployment needs them somewhere a server can fetch them from, and that place is a REGISTRY.",
+      "A registry is just a store for images. Docker Hub is the big public one; AWS, Google, and GitHub all run their own; most companies have a private registry that only their machines can reach.",
+      "The workflow is short: you `push` an image up, and any machine that needs it `pull`s it down. That's the whole mechanism by which code gets from your laptop to production.",
+      "Names carry the location. `postgres:18-alpine` is shorthand for a public image on Docker Hub. Something like `ghcr.io/yourname/app:1.2.0` names the registry explicitly. The part after the colon is the TAG — usually a version.",
+      "A practical warning about tags. `latest` is not special and means nothing; it's just the default tag when you don't specify one. Deploying `latest` means nobody can tell which code is actually running, and two servers can be running different things while claiming the same version. Use real version numbers.",
+      "This project never pushes anywhere — the images stay on your machine and, in Chapter 5, get handed directly to the cluster. That's a normal way to work locally, and it's why you haven't needed an account anywhere.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Pull a real image from Docker Hub. This is a tiny official Linux image, about 8 MB.",
+        command: "docker pull alpine:3.23",
+        saw: "Watch it fetch layers. If any layer is one your machine already has from another image, it's skipped instantly — that's layer sharing from the first lesson doing real work.",
+        check: { kind: "manual", label: "It downloaded" },
+      },
+      {
+        instruction:
+          "Run it and print its version. This image is a complete Linux system, and it's smaller than most photos.",
+        command: "docker run --rm alpine:3.23 cat /etc/alpine-release",
+        saw: "A version number, printed by a Linux system that started, ran one command, and vanished — in well under a second. That speed is the entire practical argument for containers.",
+        check: { kind: "manual", label: "I saw the version" },
+      },
+    ],
+    takeaway:
+      "A registry stores images so other machines can pull them. Tag with real version numbers, never rely on `latest`.",
+  },
+];

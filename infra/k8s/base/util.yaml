@@ -1,0 +1,94 @@
+# The util service, on Kubernetes.
+#
+# Compare this with the six lines it took in docker-compose.yml. Kubernetes is
+# more verbose because it is answering harder questions: how many copies, on
+# which machines, how do we know one is healthy, what happens during an update.
+# Compose never had to ask any of those.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: util
+  labels: { app: util }
+spec:
+  # How many copies you want. Not how many to start — how many should EXIST.
+  # Kubernetes will keep making this true, forever, without being asked again.
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1          # may run 1 extra pod during an update
+      maxUnavailable: 0    # but never drop below the desired count
+
+  # How the Deployment finds the pods it owns. Must match the labels below.
+  selector:
+    matchLabels: { app: util }
+
+  template:
+    metadata:
+      labels: { app: util }
+    spec:
+      containers:
+        - name: util
+          image: quest/util:dev
+          # Never pull from the internet — this image was built locally and
+          # side-loaded into the cluster. Without this, Kubernetes tries
+          # Docker Hub, fails, and the pod sits in ImagePullBackOff forever.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+
+          # Liveness: is the process alive? If this fails, the container is
+          # KILLED and restarted. Only check whether you yourself are working.
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 2
+            periodSeconds: 10
+
+          # Readiness: should traffic come here? If this fails, the pod is
+          # removed from the Service and gets no requests — but is NOT
+          # restarted. This split is the thing Compose could not express.
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8080 }
+            initialDelaySeconds: 1
+            periodSeconds: 5
+
+          env:
+            - name: SERVICE_VERSION
+              value: "1.0.0"
+            # Just a DNS name. Kubernetes runs a DNS server that resolves
+            # every Service name inside the cluster, exactly like Compose did.
+            - name: PEERS
+              value: "ai:8000,compute:9000"
+            # The Downward API: how a pod learns its own name and location.
+            # Under plain Docker these were null. Now they have values, and
+            # the dashboard's parity table shows the difference.
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+
+          resources:
+            # requests = what the scheduler reserves when choosing a machine.
+            # limits   = the hard ceiling before throttling or being killed.
+            requests: { cpu: 10m, memory: 24Mi }
+            limits: { cpu: 300m, memory: 128Mi }
+
+---
+# A Service is a stable name and address in front of a changing set of pods.
+# Pods come and go constantly; this does not. Anything in the cluster can
+# reach these pods at the DNS name "util" and never think about it again.
+apiVersion: v1
+kind: Service
+metadata:
+  name: util
+spec:
+  type: NodePort
+  selector: { app: util }   # any pod with this label is a target
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30081          # reachable from your Mac at localhost:30090

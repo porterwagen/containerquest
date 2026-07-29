@@ -1,0 +1,7 @@
+# A namespace is a folder for cluster objects. Everything this project creates
+# lives in here, so `kubectl delete namespace container-quest` cleans up all of
+# it in one command and nothing leaks into the rest of the cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: container-quest

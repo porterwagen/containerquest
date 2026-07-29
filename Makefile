@@ -49,11 +49,15 @@ cluster-rm:
 ## load: build images and side-load them into kind (no registry needed)
 load:
 	$(COMPOSE) build
-	@for s in dashboard worker ai util compute; do kind load docker-image quest/$$s:dev --name $(CLUSTER); done
+	@for s in compute ai util; do kind load docker-image quest/$$s:dev --name $(CLUSTER); done
+
+## k8s: cluster + images + manifests, everything Chapter 5 needs
+k8s: cluster load deploy
+	@kubectl get pods -n container-quest
 
 ## deploy: apply the Kubernetes manifests
 deploy:
-	kubectl apply -k infra/k8s/overlays/local
+	kubectl apply -k infra/k8s/base
 
 ## demo: build and serve the browser-only demo on :3100 (no Docker needed)
 demo:

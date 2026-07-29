@@ -1,0 +1,11 @@
+# Applies every file below with one command: kubectl apply -k
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: container-quest
+
+resources:
+  - namespace.yaml
+  - compute.yaml
+  - ai.yaml
+  - util.yaml
