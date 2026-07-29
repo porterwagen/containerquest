@@ -1,0 +1,23 @@
+# teach: Everything here is excluded from the build context — the tarball Docker
+# teach: ships to the daemon before a single instruction runs. Without this file
+# teach: the context includes every node_modules and .next directory in the repo
+# teach: (hundreds of MB), which is slow AND wrong: those are host artifacts,
+# teach: built for macOS, about to be overwritten by a clean install inside Linux.
+
+node_modules
+**/node_modules
+.next
+**/.next
+**/dist
+**/__pycache__
+**/.venv
+.git
+.github
+docs
+*.md
+!container-quest.md
+.DS_Store
+**/.env
+**/.env.local
+services/compute/compute
+services/util/util

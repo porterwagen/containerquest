@@ -1,0 +1,161 @@
+# Container Quest — the whole platform on one host.
+#
+# teach: Compose is the Docker-native way to run several containers together.
+# teach: Read it as the "before" picture: everything here has a Kubernetes
+# teach: equivalent in infra/k8s, and comparing the two files side by side is
+# teach: the fastest way to see what Kubernetes actually adds.
+
+name: container-quest
+
+# teach: An anchor. YAML lets us define this once and merge it into every
+# teach: service, so build metadata stays consistent across five languages.
+x-build-args: &build-args
+  GIT_SHA: ${GIT_SHA:-dev}
+  BUILD_TIME: ${BUILD_TIME:-unknown}
+
+services:
+  # --- Stateful dependencies -------------------------------------------------
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: quest
+      POSTGRES_PASSWORD: quest
+      POSTGRES_DB: quest
+    ports: ["5432:5432"]
+    volumes:
+      # teach: A named volume. Container filesystems are erased on removal —
+      # teach: without this line, `make down` would silently destroy the database.
+      # teach: The mount point is /var/lib/postgresql, NOT .../data: Postgres 18
+      # teach: changed the convention so pg_upgrade can work across versions.
+      # teach: Mounting the old path makes the image refuse to start — a perfect
+      # teach: illustration that a volume outlives the image it was created by.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      # teach: Compose can wait for "healthy" before starting dependents, which
+      # teach: is the Compose answer to startup ordering. Kubernetes deliberately
+      # teach: has no equivalent: it assumes services retry, because in a real
+      # teach: cluster dependencies restart at random times anyway.
+      test: ["CMD-SHELL", "pg_isready -U quest -d quest"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  # --- The five languages ----------------------------------------------------
+
+  compute:
+    build:
+      # teach: Context is this service's own folder — it needs nothing else.
+      context: ../../services/compute
+      args: *build-args
+    image: quest/compute:dev
+    environment:
+      SERVICE_VERSION: "1.0.0"
+      GIT_SHA: ${GIT_SHA:-dev}
+    ports: ["9000:9000"]
+    restart: unless-stopped
+    # teach: No healthcheck. The image has no shell and no curl, so there is
+    # teach: nothing to exec — a real consequence of FROM scratch. Kubernetes
+    # teach: solves this properly: its httpGet probe runs from the kubelet,
+    # teach: outside the container, so an empty image is no obstacle at all.
+
+  util:
+    build:
+      context: ../../services/util
+      args: *build-args
+    image: quest/util:dev
+    environment:
+      SERVICE_VERSION: "1.0.0"
+      GIT_SHA: ${GIT_SHA:-dev}
+      PEERS: "ai:8000,compute:9000"
+    ports: ["8080:8080"]
+    restart: unless-stopped
+    depends_on: [compute, ai]
+
+  ai:
+    build:
+      context: ../../services/ai
+      args: *build-args
+    image: quest/ai:dev
+    environment:
+      SERVICE_VERSION: "1.0.0"
+      GIT_SHA: ${GIT_SHA:-dev}
+    ports: ["8000:8000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+
+  worker:
+    build:
+      # teach: Context is the REPO ROOT, because the npm lockfile lives there and
+      # teach: Docker cannot reach outside its context. Hence the longer COPY
+      # teach: paths inside services/worker/Dockerfile.
+      context: ../..
+      dockerfile: services/worker/Dockerfile
+      args: *build-args
+    image: quest/worker:dev
+    environment:
+      SERVICE_VERSION: "1.0.0"
+      GIT_SHA: ${GIT_SHA:-dev}
+      # teach: `redis` and `postgres` are DNS names, resolved by Docker's
+      # teach: embedded DNS server on the shared network. No IP addresses, no
+      # teach: config files, no service registry. Kubernetes works the same way.
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgres://quest:quest@postgres:5432/quest
+      AI_URL: http://ai:8000
+      WORKER_CONCURRENCY: "4"
+    ports: ["3001:3001"]
+    restart: unless-stopped
+    healthcheck:
+      # teach: busybox wget, already in the alpine base — no extra package, no
+      # teach: extra layer. Adding curl just for a healthcheck is a common way
+      # teach: to grow an image for no reason.
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    depends_on:
+      redis: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: apps/dashboard/Dockerfile
+      args: *build-args
+    image: quest/dashboard:dev
+    environment:
+      SERVICE_VERSION: "1.0.0"
+      GIT_SHA: ${GIT_SHA:-dev}
+      QUEST_MODE: compose
+      # teach: Tells the dashboard to reach peers by service name rather than
+      # teach: localhost. Inside a container, localhost is a dead end.
+      QUEST_IN_CONTAINER: "1"
+    ports: ["3000:3000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 8s
+    depends_on: [worker, ai, util, compute]
+
+volumes:
+  pgdata:

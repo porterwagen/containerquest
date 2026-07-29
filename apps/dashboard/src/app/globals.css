@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* Mission control: near-black canvas, one accent per meaning, telemetry in
+   monospace. Colour is never decorative here — it always encodes state. */
+@theme {
+  --color-void: #07090c;
+  --color-panel: #0d1116;
+  --color-panel-2: #131922;
+  --color-edge: #1e2732;
+  --color-edge-bright: #2c3948;
+
+  --color-ink: #e8eef5;
+  --color-ink-dim: #94a3b5;
+  --color-ink-faint: #5b6879;
+
+  --color-live: #34d399;
+  --color-warn: #fbbf24;
+  --color-dead: #f87171;
+  --color-beam: #38bdf8;
+
+  /* One colour per language, used consistently everywhere. */
+  --color-lang-typescript: #4a9eff;
+  --color-lang-python: #ffd43b;
+  --color-lang-go: #00b8d4;
+  --color-lang-c: #c792ea;
+  --color-lang-infra: #7d8896;
+
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A faint grid, like a plotting surface. Sits behind everything. */
+.grid-field {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Status dot that breathes while healthy, so "live" is legible at a glance
+   without reading a single label. */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; }
+  70% { box-shadow: 0 0 0 7px transparent; opacity: 1; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0.9; }
+}
+.pulse {
+  animation: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(400%); }
+}
+.sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.5), transparent);
+  animation: sweep 2s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 0.4s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse, .sweep::after, .fade-up { animation: none; }
+}

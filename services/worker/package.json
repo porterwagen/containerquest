@@ -1,0 +1,21 @@
+{
+  "name": "@quest/worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.ts",
+    "dev": "node --watch index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "^5.81.2",
+    "ioredis": "^5.9.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/pg": "^8.15.6",
+    "typescript": "^5.9.0"
+  }
+}

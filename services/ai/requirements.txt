@@ -1,0 +1,5 @@
+# Pinned exactly. A range like fastapi>=0.141 means two builds a week apart can
+# ship different code — the opposite of what a container image is for.
+fastapi==0.141.0
+uvicorn==0.52.0
+pydantic==2.13.4
