@@ -1,0 +1,26 @@
+# teach: A whole Kubernetes cluster, defined in one file. `kind` runs each node as
+# teach: a Docker container — so this is Kubernetes running *inside* the very thing
+# teach: it schedules. Reproducible on any machine with Docker, including CI.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: container-quest
+
+nodes:
+  # teach: The control plane runs the API server, scheduler, and controller manager —
+  # teach: the components that notice a pod died and decide to replace it.
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 30080   # teach: NodePort → localhost, so the dashboard is reachable at :8088
+        hostPort: 8088
+        protocol: TCP
+
+  # teach: Two workers, so the Fleet view can show pods actually spread across nodes.
+  # teach: With one node, "scheduling" looks like a no-op and the lesson is lost.
+  - role: worker
+  - role: worker

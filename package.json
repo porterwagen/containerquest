@@ -1,0 +1,21 @@
+{
+  "name": "container-quest",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A miniature production platform in five languages, built to make Docker and Kubernetes visible.",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "services/worker"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "snippets": "node scripts/collect-snippets.mjs",
+    "ledger": "node scripts/image-report.mjs"
+  }
+}
