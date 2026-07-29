@@ -1,4 +1,4 @@
-import type { Lesson } from "./types";
+import type { Lesson } from "./types.ts";
 
 /**
  * Chapter 5 — Kubernetes.
@@ -74,7 +74,7 @@ export const CHAPTER_5: Lesson[] = [
         instruction:
           "Ask the C service in the CLUSTER about itself. This opens a tunnel to it, asks, and closes the tunnel.",
         command:
-          "kubectl port-forward -n container-quest svc/compute 9900:9000 >/dev/null 2>&1 & sleep 4; curl -s localhost:9900/meta; echo; kill %1 2>/dev/null",
+          "kubectl port-forward -n container-quest svc/compute 9900:9000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s localhost:9900/meta; echo; kill $PF 2>/dev/null",
         saw: "podName and nodeName now have real values — something like compute-f78b5cb74-7kgxk on container-quest-worker. Compare with the same service under Docker, where both were null. Same image, same code, more context.",
         check: { kind: "manual", label: "I saw a pod name and node name" },
       },
@@ -82,7 +82,7 @@ export const CHAPTER_5: Lesson[] = [
         instruction:
           "That command used port-forward, which is the everyday way to reach something inside a cluster from your laptop. Here it is again against a different service.",
         command:
-          "kubectl port-forward -n container-quest svc/ai 9901:8000 >/dev/null 2>&1 & sleep 4; curl -s -o /dev/null -w 'status %{http_code}\\n' localhost:9901/healthz; kill %1 2>/dev/null",
+          "kubectl port-forward -n container-quest svc/ai 9901:8000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s -o /dev/null -w 'status %{http_code}\\n' localhost:9901/healthz; kill $PF 2>/dev/null",
         saw: "status 200. Cluster networks are private by default — nothing inside is reachable from outside unless deliberately exposed. port-forward punches a temporary hole for you, and it's the single command you'll use most while debugging a real cluster.",
         check: { kind: "manual", label: "I saw status 200" },
       },

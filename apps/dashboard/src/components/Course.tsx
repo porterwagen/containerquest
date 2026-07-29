@@ -9,6 +9,8 @@ import {
   type ProbeMap,
   type Step,
 } from "@/lessons";
+import { Replay, getRecording } from "./Replay";
+import type { Mode } from "@/lib/control";
 
 /**
  * The course.
@@ -43,7 +45,13 @@ function loadProgress(): Progress {
   }
 }
 
-export function Course({ onOpenDashboard }: { onOpenDashboard: () => void }) {
+export function Course({
+  onOpenDashboard,
+  mode = "live",
+}: {
+  onOpenDashboard: () => void;
+  mode?: Mode;
+}) {
   const [progress, setProgress] = useState<Progress>({ done: [], current: LESSONS[0]!.id });
   const [hydrated, setHydrated] = useState(false);
 
@@ -75,13 +83,14 @@ export function Course({ onOpenDashboard }: { onOpenDashboard: () => void }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-      <Sidebar current={lesson.id} done={progress.done} onSelect={goTo} />
+      <Sidebar current={lesson.id} done={progress.done} onSelect={goTo} mode={mode} />
 
       <div className="min-w-0">
         <LessonView
           key={lesson.id}
           lesson={lesson}
           done={isDone}
+          mode={mode}
           onComplete={() => complete(lesson.id)}
           onOpenDashboard={onOpenDashboard}
         />
@@ -117,10 +126,12 @@ function Sidebar({
   current,
   done,
   onSelect,
+  mode,
 }: {
   current: string;
   done: string[];
   onSelect: (id: string) => void;
+  mode: Mode;
 }) {
   return (
     <aside className="lg:sticky lg:top-6 lg:self-start">
@@ -166,7 +177,9 @@ function Sidebar({
       ))}
 
       <p className="mt-5 border-t border-edge pt-4 text-[11.5px] leading-relaxed text-ink-faint">
-        Keep a terminal open beside this. Every lesson asks you to run something real.
+        {mode === "demo"
+          ? "Every command here was really run against a real system \u2014 press run to replay what it printed."
+          : "Keep a terminal open beside this. Every lesson asks you to run something real."}
       </p>
     </aside>
   );
@@ -175,11 +188,13 @@ function Sidebar({
 function LessonView({
   lesson,
   done,
+  mode,
   onComplete,
   onOpenDashboard,
 }: {
   lesson: Lesson;
   done: boolean;
+  mode: Mode;
   onComplete: () => void;
   onOpenDashboard: () => void;
 }) {
@@ -191,6 +206,7 @@ function LessonView({
   // Snapshot the counters when the lesson opens; every check is measured
   // against that moment, so previous lessons' activity can't pass a step.
   useEffect(() => {
+    if (mode === "demo") return;
     let stop = false;
 
     async function tick() {
@@ -211,7 +227,7 @@ function LessonView({
       stop = true;
       clearInterval(id);
     };
-  }, [lesson.id]);
+  }, [lesson.id, mode]);
 
   // Re-evaluate every step against the latest counters.
   useEffect(() => {
@@ -222,7 +238,12 @@ function LessonView({
     );
   }, [probes, lesson.steps]);
 
-  const allDone = lesson.steps.every((s, i) => (s.check.kind === "manual" ? manual[i] : passed[i]));
+  // Live mode proves you ran the command by watching the services change.
+  // Demo mode has nothing to watch, so a step completes when you play its
+  // recording — and the UI says so rather than implying verification.
+  const allDone = lesson.steps.every((s, i) =>
+    mode === "demo" ? manual[i] : s.check.kind === "manual" ? manual[i] : passed[i],
+  );
 
   useEffect(() => {
     if (allDone && !done) onComplete();
@@ -257,7 +278,16 @@ function LessonView({
             key={i}
             n={i + 1}
             step={step}
-            passed={step.check.kind === "manual" ? manual[i]! : passed[i]!}
+            lessonId={lesson.id}
+            stepIndex={i}
+            mode={mode}
+            passed={
+              mode === "demo"
+                ? manual[i]!
+                : step.check.kind === "manual"
+                  ? manual[i]!
+                  : passed[i]!
+            }
             onManual={() => setManual((m) => m.map((v, j) => (j === i ? true : v)))}
           />
         ))}
@@ -290,15 +320,23 @@ function LessonView({
 function StepCard({
   n,
   step,
+  lessonId,
+  stepIndex,
+  mode,
   passed,
   onManual,
 }: {
   n: number;
   step: Step;
+  lessonId: string;
+  stepIndex: number;
+  mode: Mode;
   passed: boolean;
   onManual: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const recording = getRecording(lessonId, stepIndex);
+  const isDemo = mode === "demo";
 
   async function copy() {
     if (!step.command) return;
@@ -310,7 +348,11 @@ function StepCard({
   return (
     <section
       className="rounded-xl border bg-panel transition-colors"
-      style={{ borderColor: passed ? "color-mix(in oklab, var(--color-live) 40%, transparent)" : "var(--color-edge)" }}
+      style={{
+        borderColor: passed
+          ? "color-mix(in oklab, var(--color-live) 40%, transparent)"
+          : "var(--color-edge)",
+      }}
     >
       <div className="flex items-start gap-3 p-4">
         <span
@@ -320,27 +362,34 @@ function StepCard({
             color: passed ? "var(--color-live)" : "var(--color-ink-faint)",
           }}
         >
-          {passed ? "✓" : n}
+          {passed ? "\u2713" : n}
         </span>
 
         <div className="min-w-0 flex-1">
           <p className="text-[14.5px] leading-relaxed text-ink">{step.instruction}</p>
 
-          {step.command && (
-            <div className="mt-2.5 flex items-stretch gap-2">
-              <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre rounded-md border border-edge bg-void px-3 py-2.5 font-mono text-[12.5px] text-beam">
-                {step.command}
-              </code>
-              <button
-                onClick={copy}
-                className="shrink-0 rounded-md border border-edge px-2.5 font-mono text-[11px] text-ink-faint transition-colors hover:border-edge-bright hover:text-ink"
-              >
-                {copied ? "copied" : "copy"}
-              </button>
-            </div>
+          {/* On the web there is nothing to run against, so the command is
+              shown as a replay of the real recorded session. Locally it is a
+              command you copy and actually execute. */}
+          {step.command && isDemo && recording ? (
+            <Replay lessonId={lessonId} stepIndex={stepIndex} onPlayed={onManual} />
+          ) : (
+            step.command && (
+              <div className="mt-2.5 flex items-stretch gap-2">
+                <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre rounded-md border border-edge bg-void px-3 py-2.5 font-mono text-[12.5px] text-beam">
+                  {step.command}
+                </code>
+                <button
+                  onClick={copy}
+                  className="shrink-0 rounded-md border border-edge px-2.5 font-mono text-[11px] text-ink-faint transition-colors hover:border-edge-bright hover:text-ink"
+                >
+                  {copied ? "copied" : "copy"}
+                </button>
+              </div>
+            )
           )}
 
-          {!passed && step.check.kind === "manual" && (
+          {!passed && !isDemo && step.check.kind === "manual" && (
             <button
               onClick={onManual}
               className="mt-2.5 rounded-md border border-edge px-2.5 py-1.5 text-[12px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
@@ -349,10 +398,19 @@ function StepCard({
             </button>
           )}
 
-          {!passed && step.check.kind !== "manual" && (
+          {!passed && !isDemo && step.check.kind !== "manual" && (
             <p className="mt-2.5 font-mono text-[11.5px] text-ink-faint">
-              waiting — this checks itself when you run it
+              waiting \u2014 this checks itself when you run it
             </p>
+          )}
+
+          {!passed && isDemo && !step.command && (
+            <button
+              onClick={onManual}
+              className="mt-2.5 rounded-md border border-edge px-2.5 py-1.5 text-[12px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+            >
+              Got it
+            </button>
           )}
 
           {passed && step.saw && (

@@ -1,4 +1,4 @@
-import type { Lesson } from "./types";
+import type { Lesson } from "./types.ts";
 
 /**
  * Chapter 2 — Images: what's inside, and why size matters.

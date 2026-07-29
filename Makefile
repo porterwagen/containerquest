@@ -59,6 +59,10 @@ k8s: cluster load deploy
 deploy:
 	kubectl apply -k infra/k8s/base
 
+## record: capture real terminal output for every lesson (needs the fleet up)
+record:
+	node scripts/record-lessons.mjs
+
 ## demo: build and serve the browser-only demo on :3100 (no Docker needed)
 demo:
 	NEXT_PUBLIC_QUEST_MODE=demo npm run build --workspace @quest/dashboard
@@ -78,4 +82,4 @@ snippets:
 ledger:
 	node scripts/image-report.mjs
 
-.PHONY: help doctor up down ps logs meta cluster cluster-rm load deploy snippets ledger
+.PHONY: help doctor up down ps logs meta cluster cluster-rm load k8s deploy record demo deploy-demo snippets ledger

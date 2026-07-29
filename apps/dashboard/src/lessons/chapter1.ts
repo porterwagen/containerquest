@@ -1,4 +1,4 @@
-import type { Lesson } from "./types";
+import type { Lesson } from "./types.ts";
 
 /**
  * Chapter 1 — What a container actually is.

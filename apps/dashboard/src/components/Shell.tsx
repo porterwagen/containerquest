@@ -6,6 +6,7 @@ import type { Mode } from "@/lib/control";
 import { Course } from "./Course";
 import { FleetView } from "./FleetView";
 import { LESSONS, TOTAL_MINUTES } from "@/lessons";
+import { RECORDED_AT } from "./Replay";
 
 /**
  * Two halves of one thing.
@@ -63,6 +64,24 @@ export function Shell({ initial, mode }: { initial: FleetEntry[]; mode: Mode }) 
           </div>
         </div>
 
+        {mode === "demo" && (
+          <div className="mt-4 rounded-lg border border-edge bg-panel px-4 py-3 text-[12.5px] leading-relaxed text-ink-faint">
+            <span className="text-beam">You&apos;re reading the hosted version. </span>
+            The lessons are the real thing. Every terminal output below was captured by actually
+            running that command against a live system on{" "}
+            {new Date(RECORDED_AT).toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}{" "}
+            — real hostnames, real image sizes, real errors. Nothing here is invented. What you
+            can&apos;t do from a browser is run them yourself, so those play back as a recording.{" "}
+            <span className="text-ink-dim">
+              To do it for real: clone the repo and run <code className="font-mono">make up</code>.
+            </span>
+          </div>
+        )}
+
         {view === "learn" && (
           <div className="mt-4 flex items-center gap-3">
             <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-panel-2">
@@ -79,13 +98,24 @@ export function Shell({ initial, mode }: { initial: FleetEntry[]; mode: Mode }) 
       </header>
 
       {view === "learn" ? (
-        <Course onOpenDashboard={() => setView("dashboard")} />
+        <Course onOpenDashboard={() => setView("dashboard")} mode={mode} />
       ) : (
         <>
           <p className="mb-5 max-w-2xl rounded-lg border border-edge bg-panel px-4 py-3 text-[12.5px] leading-relaxed text-ink-faint">
-            This is the instrument panel — live readings from the eight containers running on your
-            machine. If a number here doesn&apos;t mean anything to you yet, that&apos;s expected.
-            The lessons explain each one as you reach it.
+            {mode === "demo" ? (
+              <>
+                <span className="text-beam">Simulated. </span>
+                This is the real dashboard, driven by a model running in your browser instead of by
+                real containers — the same interface the live version uses. The controls genuinely
+                work: crash a pod, scale a deployment, run a rolling deploy, and watch it respond.
+              </>
+            ) : (
+              <>
+                This is the instrument panel — live readings from the eight containers running on
+                your machine. If a number here doesn&apos;t mean anything to you yet, that&apos;s
+                expected. The lessons explain each one as you reach it.
+              </>
+            )}
           </p>
           <FleetView initial={initial} mode={mode} />
         </>

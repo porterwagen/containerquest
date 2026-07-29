@@ -1,13 +1,13 @@
-import type { Lesson } from "./types";
-import { CHAPTER_0 } from "./chapter0";
-import { CHAPTER_1 } from "./chapter1";
-import { CHAPTER_2 } from "./chapter2";
-import { CHAPTER_3 } from "./chapter3";
-import { CHAPTER_4 } from "./chapter4";
-import { CHAPTER_5 } from "./chapter5";
-import { CHAPTER_6 } from "./chapter6";
+import type { Lesson } from "./types.ts";
+import { CHAPTER_0 } from "./chapter0.ts";
+import { CHAPTER_1 } from "./chapter1.ts";
+import { CHAPTER_2 } from "./chapter2.ts";
+import { CHAPTER_3 } from "./chapter3.ts";
+import { CHAPTER_4 } from "./chapter4.ts";
+import { CHAPTER_5 } from "./chapter5.ts";
+import { CHAPTER_6 } from "./chapter6.ts";
 
-export * from "./types";
+export * from "./types.ts";
 
 export const LESSONS: Lesson[] = [
   ...CHAPTER_0,

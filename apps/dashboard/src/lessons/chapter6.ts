@@ -1,4 +1,4 @@
-import type { Lesson } from "./types";
+import type { Lesson } from "./types.ts";
 
 /**
  * Chapter 6 — Ship something of your own.
@@ -94,15 +94,24 @@ export const CHAPTER_6: Lesson[] = [
         check: { kind: "manual", label: "My pods are running" },
       },
       {
-        instruction: "Give them a stable name and reach your app through it.",
+        instruction:
+          "Give your pods a stable name, then reach your app through a port-forward tunnel and ask it twice who answered.",
         command:
-          "kubectl expose deployment myapp -n container-quest --port=4000 --target-port=4000 >/dev/null; kubectl port-forward -n container-quest svc/myapp 4400:4000 >/dev/null 2>&1 & sleep 4; curl -s localhost:4400; echo; curl -s localhost:4400; echo; kill %1 2>/dev/null",
-        saw: "Two responses — and look at the hostnames. They're different, because the service load-balanced your two requests across your two pods. Your application is now running redundantly across multiple machines, behind a load balancer, with automatic restart if anything dies. That's a real deployment.",
-        check: { kind: "manual", label: "I saw two different hostnames" },
+          "kubectl expose deployment myapp -n container-quest --port=4000 --target-port=4000 >/dev/null; kubectl port-forward -n container-quest svc/myapp 4400:4000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s localhost:4400; echo; curl -s localhost:4400; echo; kill $PF 2>/dev/null",
+        saw: "Two responses — and the SAME hostname both times, even though you have two pods. This surprises people. `port-forward` is a debugging tunnel: it picks one pod and wires you straight to it, bypassing the Service entirely. It is not the path real traffic takes, so it cannot show you load balancing. Worth remembering, because it means port-forward can make a broken pod look fine, or a healthy one look broken, depending on which it picked.",
+        check: { kind: "manual", label: "I saw the same hostname twice" },
+      },
+      {
+        instruction:
+          "Now ask from INSIDE the cluster, through the Service name — the path real traffic actually takes. This launches a throwaway container, makes eight requests, and deletes itself.",
+        command:
+          "kubectl run lb-demo --rm -i --restart=Never --image=alpine:3.23 -n container-quest -- sh -c 'for i in 1 2 3 4 5 6 7 8; do wget -qO- myapp:4000; echo; done'",
+        saw: "Now the hostnames alternate between both of your pods. THAT is the load balancer. The Service took the name `myapp`, resolved it, and spread the requests across every ready pod behind it. Your application is now running redundantly across multiple machines, load balanced, and restarted automatically if anything dies. That is a real deployment.",
+        check: { kind: "manual", label: "I saw both pod names" },
       },
     ],
     takeaway:
-      "Get the image to the cluster, declare a Deployment and a Service, and everything Kubernetes does for the built-in services now works for yours too.",
+      "Get the image to the cluster, declare a Deployment and a Service, and everything Kubernetes does for the built-in services now works for yours too. Note that port-forward pins to one pod — real traffic goes through the Service.",
   },
 
   {

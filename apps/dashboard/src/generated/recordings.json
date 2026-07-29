@@ -1,0 +1,485 @@
+{
+  "recordedAt": "2026-07-29T19:37:14.723Z",
+  "recordings": {
+    "the-map:0": {
+      "command": "docker --version",
+      "output": "Docker version 29.4.0, build 9d7ad9f",
+      "exitCode": 0,
+      "ms": 302
+    },
+    "the-map:1": {
+      "command": "kubectl version --client",
+      "output": "Client Version: v1.36.3\nKustomize Version: v5.8.1",
+      "exitCode": 0,
+      "ms": 310
+    },
+    "the-system:0": {
+      "command": "docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml ps",
+      "output": "NAME                             IMAGE                               COMMAND                  SERVICE        CREATED          STATUS                   PORTS\ncontainer-quest-ai-1             quest/ai:dev                        \"uvicorn main:app --…\"   ai             6 minutes ago    Up 5 minutes (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp\ncontainer-quest-compute-1        quest/compute:dev                   \"/compute\"               compute        11 minutes ago   Up 11 minutes            0.0.0.0:9000->9000/tcp, [::]:9000->9000/tcp\ncontainer-quest-dashboard-1      quest/dashboard:dev                 \"/sbin/tini -- node …\"   dashboard      9 minutes ago    Up 9 minutes (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp\ncontainer-quest-postgres-1       postgres:18-alpine                  \"docker-entrypoint.s…\"   postgres       6 minutes ago    Up 6 minutes (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp\ncontainer-quest-redis-1          redis:8-alpine                      \"docker-entrypoint.s…\"   redis          3 hours ago      Up 3 hours (healthy)     0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp\ncontainer-quest-socket-proxy-1   tecnativa/docker-socket-proxy:0.3   \"docker-entrypoint.s…\"   socket-proxy   3 hours ago      Up 3 hours               2375/tcp\ncontainer-quest-util-1           quest/util:dev                      \"/util\"                  util           5 minutes ago    Up 5 minutes             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp\ncontainer-quest-worker-1         quest/worker:dev                    \"/sbin/tini -- node …\"   worker         9 minutes ago    Up 9 minutes (healthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp",
+      "exitCode": 0,
+      "ms": 360
+    },
+    "the-system:1": {
+      "command": "curl -s localhost:8080/aggregate",
+      "output": "{\"ai\":{\"service\":\"ai\",\"language\":\"python\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"2026-07-29T19:03:24Z\",\"hostname\":\"ea80611ee3d3\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":349,\"requests\":1,\"pid\":1},\"compute\":{\"service\":\"compute\",\"language\":\"c\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"unknown\",\"hostname\":\"c1b591a011f1\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":698,\"requests\":6,\"pid\":1}}",
+      "exitCode": 0,
+      "ms": 297
+    },
+    "toolkit:0": {
+      "command": "docker logs --tail 15 container-quest-ai-1",
+      "output": "INFO:     192.168.107.9:41628 - \"GET /meta HTTP/1.1\" 200 OK\nGET /readyz 200 1ms\nINFO:     192.168.107.9:41642 - \"GET /readyz HTTP/1.1\" 200 OK\nGET /healthz 200 1ms\nINFO:     192.168.107.7:54312 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /meta 200 1ms\nINFO:     192.168.107.9:41628 - \"GET /meta HTTP/1.1\" 200 OK\nGET /readyz 200 0ms\nINFO:     192.168.107.9:41642 - \"GET /readyz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     192.168.107.7:54312 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     127.0.0.1:52356 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /meta 200 0ms\nINFO:     192.168.107.7:54312 - \"GET /meta HTTP/1.1\" 200 OK",
+      "exitCode": 0,
+      "ms": 291
+    },
+    "toolkit:1": {
+      "command": "docker exec container-quest-worker-1 ls /app",
+      "output": "node_modules\npackages\nservices",
+      "exitCode": 0,
+      "ms": 304
+    },
+    "toolkit:2": {
+      "command": "docker stats --no-stream",
+      "output": "CONTAINER ID   NAME                             CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS\n7858dc95036f   container-quest-util-1           0.20%     10.12MiB / 11.74GiB   0.08%     160kB / 153kB     19.6MB / 0B       10\n0137f22cb258   container-quest-postgres-1       0.03%     27.62MiB / 11.74GiB   0.23%     20.9kB / 18.9kB   44.4MB / 688kB    10\nea80611ee3d3   container-quest-ai-1             0.70%     38.83MiB / 11.74GiB   0.32%     126kB / 114kB     42.1MB / 0B       1\n7e87c2ba0c3e   container-quest-dashboard-1      2.85%     77.62MiB / 11.74GiB   0.65%     8.04MB / 2.01MB   200MB / 0B        12\ne831d0ce564e   container-quest-worker-1         0.28%     38.7MiB / 11.74GiB    0.32%     533kB / 685kB     106MB / 0B        12\nc1b591a011f1   container-quest-compute-1        0.07%     184KiB / 11.74GiB     0.00%     401kB / 376kB     172kB / 0B        1\n8b6fdcb511e3   cq-lite-lab-1                    0.48%     49.29MiB / 11.74GiB   0.41%     3.72MB / 584kB    2.1GB / 0B        11\nb39f4c0e3ead   cq-lite-compute-2                0.01%     12KiB / 11.74GiB      0.00%     167kB / 196kB     4.32MB / 0B       1\nca6af68e893c   container-quest-socket-proxy-1   0.17%     5.18MiB / 11.74GiB    0.04%     4.3MB / 98.1MB    109MB / 12.3kB    11\n95229784d712   container-quest-redis-1          1.91%     20.44MiB / 11.74GiB   0.17%     12MB / 4.76MB     1.13GB / 0B       15\n398e42b1272e   container-quest-control-plane    15.47%    690MiB / 11.74GiB     5.74%     6.96MB / 27.2MB   52.1GB / 2.04GB   279\nafba47a6c692   container-quest-worker           1.76%     194MiB / 11.74GiB     1.61%     15.8MB / 3.79MB   14.5GB / 910MB    129\n06782f7ae1a3   container-quest-worker2          4.22%     225.6MiB / 11.74GiB   1.88%     15.3MB / 3.66MB   14.7GB / 911MB    142",
+      "exitCode": 0,
+      "ms": 2387
+    },
+    "toolkit:3": {
+      "command": "docker inspect container-quest-ai-1 --format 'restarts={{.RestartCount}} status={{.State.Status}}'",
+      "output": "restarts=1 status=running",
+      "exitCode": 0,
+      "ms": 326
+    },
+    "what-problem:0": {
+      "command": "docker ps --format 'table {{.Names}}\\t{{.Image}}\\t{{.Status}}'",
+      "output": "NAMES                            IMAGE                               STATUS\ncontainer-quest-util-1           quest/util:dev                      Up 5 minutes\ncontainer-quest-postgres-1       postgres:18-alpine                  Up 6 minutes (healthy)\ncontainer-quest-ai-1             quest/ai:dev                        Up 5 minutes (healthy)\ncontainer-quest-dashboard-1      quest/dashboard:dev                 Up 9 minutes (healthy)\ncontainer-quest-worker-1         quest/worker:dev                    Up 9 minutes (healthy)\ncontainer-quest-compute-1        quest/compute:dev                   Up 11 minutes\ncq-lite-lab-1                    cq-lite/lab:dev                     Up 2 hours\ncq-lite-compute-2                cq-lite/compute:dev                 Up 2 hours\ncontainer-quest-socket-proxy-1   tecnativa/docker-socket-proxy:0.3   Up 3 hours\ncontainer-quest-redis-1          redis:8-alpine                      Up 3 hours (healthy)\ncontainer-quest-control-plane    kindest/node:v1.36.1                Up 4 hours\ncontainer-quest-worker           kindest/node:v1.36.1                Up 4 hours\ncontainer-quest-worker2          kindest/node:v1.36.1                Up 4 hours",
+      "exitCode": 0,
+      "ms": 327
+    },
+    "what-problem:1": {
+      "command": "curl -s localhost:9000/meta",
+      "output": "{\"service\":\"compute\",\"language\":\"c\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"unknown\",\"hostname\":\"c1b591a011f1\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":702,\"requests\":7,\"pid\":1}",
+      "exitCode": 0,
+      "ms": 281
+    },
+    "just-a-process:0": {
+      "command": "curl -s localhost:8000/meta",
+      "output": "{\"service\":\"ai\",\"language\":\"python\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"2026-07-29T19:03:24Z\",\"hostname\":\"ea80611ee3d3\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":353,\"requests\":2,\"pid\":1}",
+      "exitCode": 0,
+      "ms": 281
+    },
+    "just-a-process:1": {
+      "command": "docker top container-quest-ai-1",
+      "output": "PID                 USER                TIME                COMMAND\n336623              10001               0:01                {uvicorn} /opt/venv/bin/python /opt/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000",
+      "exitCode": 0,
+      "ms": 297
+    },
+    "image-vs-container:0": {
+      "command": "docker images --filter reference='quest/*' --format 'table {{.Repository}}\\t{{.Size}}'",
+      "output": "REPOSITORY        SIZE\nquest/util        15.7MB\nquest/dashboard   309MB\nquest/ai          237MB\nquest/worker      248MB\nquest/compute     187kB",
+      "exitCode": 0,
+      "ms": 351
+    },
+    "image-vs-container:1": {
+      "command": "docker run --rm --entrypoint hostname quest/ai:dev",
+      "output": "9d57f54c8105",
+      "exitCode": 0,
+      "ms": 505
+    },
+    "disposable:0": {
+      "command": "docker exec container-quest-ai-1 sh -c 'echo \"I was here\" > /tmp/note.txt && cat /tmp/note.txt'",
+      "output": "I was here",
+      "exitCode": 0,
+      "ms": 337
+    },
+    "disposable:1": {
+      "command": "docker restart container-quest-ai-1 && sleep 4 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
+      "output": "container-quest-ai-1\nI was here\n--> STILL THERE",
+      "exitCode": 0,
+      "ms": 4775
+    },
+    "disposable:2": {
+      "command": "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --force-recreate ai && sleep 6 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
+      "output": "--> GONE\n\n Container container-quest-ai-1 Recreate \n Container container-quest-ai-1 Recreated \n Container container-quest-ai-1 Starting \n Container container-quest-ai-1 Started",
+      "exitCode": 0,
+      "ms": 6883
+    },
+    "layers:0": {
+      "command": "docker history quest/util:dev --format 'table {{.Size}}\\t{{.CreatedBy}}' | head -12",
+      "output": "SIZE      CREATED BY\n0B        ENTRYPOINT [\"/util\"]\n0B        EXPOSE [8080/tcp]\n0B        USER nonroot:nonroot\n6.1MB     COPY /util /util # buildkit\n0B        ENV GIT_SHA=dev BUILD_TIME=unknown\n0B        ARG BUILD_TIME=unknown\n0B        ARG GIT_SHA=dev\n246kB     bazel build //common:cacerts_debian13_arm64\n4.1kB     bazel build //common:os_release_debian13\n4.1kB     bazel build //static:nsswitch\n0B        bazel build //common:tmp\n\n/opt/homebrew/Library/Homebrew/cmd/shellenv.sh: line 80: echo: write error: Interrupted system call",
+      "exitCode": 0,
+      "ms": 360
+    },
+    "layers:1": {
+      "command": "docker images --filter reference='quest/*' --format 'table {{.Repository}}\\t{{.Size}}'",
+      "output": "REPOSITORY        SIZE\nquest/util        15.7MB\nquest/dashboard   309MB\nquest/ai          237MB\nquest/worker      248MB\nquest/compute     187kB",
+      "exitCode": 0,
+      "ms": 332
+    },
+    "multi-stage:0": {
+      "command": "docker images --format 'table {{.Repository}}:{{.Tag}}\\t{{.Size}}' | grep -E 'quest/compute|alpine|REPO'",
+      "output": "REPOSITORY:TAG                      SIZE\nquest/compute:dev                   187kB\nredis:8-alpine                      155MB\npostgres:18-alpine                  426MB\nalpine:3.23                         14.6MB",
+      "exitCode": 0,
+      "ms": 362
+    },
+    "multi-stage:1": {
+      "command": "docker exec container-quest-compute-1 sh",
+      "output": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"sh\": executable file not found in $PATH",
+      "exitCode": 127,
+      "ms": 337
+    },
+    "multi-stage:2": {
+      "command": "docker exec container-quest-ai-1 sh -c 'cat /etc/os-release | head -2'",
+      "output": "PRETTY_NAME=\"Debian GNU/Linux 13 (trixie)\"\nNAME=\"Debian GNU/Linux\"",
+      "exitCode": 0,
+      "ms": 329
+    },
+    "build-cache:0": {
+      "command": "cd ~/Documents/containerquest && time docker build -q -t quest/util:dev services/util",
+      "output": "sha256:6cc3d535b56783a3fae41cb585cf1892bcba9ed620b617781b7fd33fb58c1a0f\n\ndocker build -q -t quest/util:dev services/util  0.10s user 0.07s system 17% cpu 0.957 total",
+      "exitCode": 0,
+      "ms": 1234
+    },
+    "build-cache:1": {
+      "command": "cd ~/Documents/containerquest && echo '// cache test' >> services/util/main.go && time docker build -q -t quest/util:dev services/util && git checkout services/util/main.go",
+      "output": "sha256:f51beeaf9578a15fa5caf18d1bf64e07e09d1e96974bec0f79a757521d0857cb\n\ndocker build -q -t quest/util:dev services/util  0.10s user 0.06s system 29% cpu 0.538 total\nUpdated 1 path from the index",
+      "exitCode": 0,
+      "ms": 854
+    },
+    "registries:0": {
+      "command": "docker pull alpine:3.23",
+      "output": "3.23: Pulling from library/alpine\nDigest: sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40\nStatus: Image is up to date for alpine:3.23\ndocker.io/library/alpine:3.23",
+      "exitCode": 0,
+      "ms": 1104
+    },
+    "registries:1": {
+      "command": "docker run --rm alpine:3.23 cat /etc/alpine-release",
+      "output": "3.23.5",
+      "exitCode": 0,
+      "ms": 566
+    },
+    "ports:0": {
+      "command": "docker ps --format 'table {{.Names}}\\t{{.Ports}}'",
+      "output": "NAMES                            PORTS\ncontainer-quest-ai-1             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp\ncontainer-quest-util-1           0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp\ncontainer-quest-postgres-1       0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp\ncontainer-quest-dashboard-1      0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp\ncontainer-quest-worker-1         0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp\ncontainer-quest-compute-1        0.0.0.0:9000->9000/tcp, [::]:9000->9000/tcp\ncq-lite-lab-1                    0.0.0.0:3100->3000/tcp, [::]:3100->3000/tcp\ncq-lite-compute-2                9000/tcp\ncontainer-quest-socket-proxy-1   2375/tcp\ncontainer-quest-redis-1          0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp\ncontainer-quest-control-plane    127.0.0.1:59880->6443/tcp, 0.0.0.0:8088->30080/tcp\ncontainer-quest-worker           \ncontainer-quest-worker2",
+      "exitCode": 0,
+      "ms": 330
+    },
+    "ports:1": {
+      "command": "curl -s -o /dev/null -w 'status %{http_code}\\n' localhost:8000/healthz",
+      "output": "status 200",
+      "exitCode": 0,
+      "ms": 294
+    },
+    "ports:2": {
+      "command": "curl -s --max-time 4 localhost:5555/healthz >/dev/null 2>&1 && echo 'reachable' || echo 'refused — nothing is published on 5555'",
+      "output": "refused — nothing is published on 5555",
+      "exitCode": 0,
+      "ms": 279
+    },
+    "networks-dns:0": {
+      "command": "docker exec container-quest-worker-1 getent hosts redis",
+      "output": "192.168.107.4     redis  redis",
+      "exitCode": 0,
+      "ms": 323
+    },
+    "networks-dns:1": {
+      "command": "docker exec container-quest-worker-1 wget -qO- http://ai:8000/healthz",
+      "output": "{\"ok\":true,\"checks\":{}}",
+      "exitCode": 0,
+      "ms": 334
+    },
+    "networks-dns:2": {
+      "command": "docker network ls --filter name=container-quest",
+      "output": "NETWORK ID     NAME                      DRIVER    SCOPE\ncb57b8e0beea   container-quest_default   bridge    local",
+      "exitCode": 0,
+      "ms": 291
+    },
+    "config-env:0": {
+      "command": "docker inspect container-quest-worker-1 --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E 'REDIS|DATABASE|AI_URL|VERSION'",
+      "output": "DATABASE_URL=postgres://quest:quest@postgres:5432/quest\nAI_URL=http://ai:8000\nSERVICE_VERSION=1.0.0\nREDIS_URL=redis://redis:6379\nNODE_VERSION=24.18.0\nYARN_VERSION=1.22.22",
+      "exitCode": 0,
+      "ms": 298
+    },
+    "config-env:1": {
+      "command": "docker run --rm -e SERVICE_VERSION=9.9.9 --entrypoint sh quest/ai:dev -c 'echo \"this container thinks it is version $SERVICE_VERSION\"'",
+      "output": "this container thinks it is version 9.9.9",
+      "exitCode": 0,
+      "ms": 506
+    },
+    "volumes:0": {
+      "command": "docker exec container-quest-postgres-1 psql -U quest -d quest -c \"CREATE TABLE IF NOT EXISTS proof (note TEXT); INSERT INTO proof VALUES ('survived');\" ",
+      "output": "CREATE TABLE\nINSERT 0 1\n\nNOTICE:  relation \"proof\" already exists, skipping",
+      "exitCode": 0,
+      "ms": 342
+    },
+    "volumes:1": {
+      "command": "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --force-recreate postgres && sleep 8 && docker exec container-quest-postgres-1 psql -U quest -d quest -t -c 'SELECT note FROM proof;'",
+      "output": " sur\n survived\n survived\n survived\n\n\n Container container-quest-postgres-1 Recreate \n Container container-quest-postgres-1 Recreated \n Container container-quest-postgres-1 Starting \n Container container-quest-postgres-1 Started",
+      "exitCode": 0,
+      "ms": 8734
+    },
+    "volumes:2": {
+      "command": "docker volume ls --filter name=container-quest",
+      "output": "DRIVER    VOLUME NAME\nlocal     container-quest_pgdata",
+      "exitCode": 0,
+      "ms": 312
+    },
+    "debugging:0": {
+      "command": "docker run --name quest-broken alpine:3.23 sh -c 'echo \"connecting to database...\"; sleep 1; echo \"FATAL: no such host: db\" >&2; exit 1'",
+      "output": "connecting to database...\n\nFATAL: no such host: db",
+      "exitCode": 1,
+      "ms": 1505
+    },
+    "debugging:1": {
+      "command": "docker ps -a --filter name=quest-broken --format 'table {{.Names}}\\t{{.Status}}'",
+      "output": "NAMES          STATUS\nquest-broken   Exited (1) Less than a second ago",
+      "exitCode": 0,
+      "ms": 338
+    },
+    "debugging:2": {
+      "command": "docker logs quest-broken",
+      "output": "connecting to database...\n\nFATAL: no such host: db",
+      "exitCode": 0,
+      "ms": 305
+    },
+    "debugging:3": {
+      "command": "docker rm quest-broken",
+      "output": "quest-broken",
+      "exitCode": 0,
+      "ms": 331
+    },
+    "restart-policies:0": {
+      "command": "docker inspect container-quest-ai-1 --format 'restarts: {{.RestartCount}}'",
+      "output": "restarts: 0",
+      "exitCode": 0,
+      "ms": 299
+    },
+    "restart-policies:1": {
+      "command": "curl -s -XPOST localhost:8000/chaos -H 'content-type: application/json' -d '{\"action\":\"crash\"}'",
+      "output": "{\"ok\":true,\"action\":\"crash\"}",
+      "exitCode": 0,
+      "ms": 294
+    },
+    "restart-policies:2": {
+      "command": "sleep 6 && docker inspect container-quest-ai-1 --format 'restarts: {{.RestartCount}} status: {{.State.Status}}'",
+      "output": "restarts: 1 status: running",
+      "exitCode": 0,
+      "ms": 6362
+    },
+    "probes:0": {
+      "command": "curl -s -XPOST localhost:8080/chaos -H 'content-type: application/json' -d '{\"action\":\"unready\"}'",
+      "output": "{\"action\":\"unready\",\"ok\":true}",
+      "exitCode": 0,
+      "ms": 297
+    },
+    "probes:1": {
+      "command": "echo \"liveness (am I alive?):    $(curl -s -o /dev/null -w '%{http_code}' localhost:8080/healthz)\"; echo \"readiness (send traffic?): $(curl -s -o /dev/null -w '%{http_code}' localhost:8080/readyz)\"",
+      "output": "liveness (am I alive?):    200\nreadiness (send traffic?): 503",
+      "exitCode": 0,
+      "ms": 288
+    },
+    "probes:2": {
+      "command": "docker inspect container-quest-util-1 --format 'restarts: {{.RestartCount}} uptime-status: {{.State.Status}}'",
+      "output": "restarts: 0 uptime-status: running",
+      "exitCode": 0,
+      "ms": 294
+    },
+    "compose-limits:0": {
+      "command": "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=3 2>&1 | tail -4",
+      "output": " Container container-quest-postgres-1 Healthy \n Container container-quest-redis-1 Healthy \n Container container-quest-worker-2 Starting \nError response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint container-quest-worker-2 (61678d71d17d3322186154c44604c863816457246a00b0efd66dbc2a158a806a): Bind for 0.0.0.0:3001 failed: port is already allocated",
+      "exitCode": 0,
+      "ms": 1274
+    },
+    "compose-limits:1": {
+      "command": "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=1 2>&1 | tail -2",
+      "output": " Container container-quest-redis-1 Healthy \n Container container-quest-postgres-1 Healthy",
+      "exitCode": 0,
+      "ms": 1022
+    },
+    "k8s-why:0": {
+      "command": "cd ~/Documents/containerquest && kubectl apply -k infra/k8s/base",
+      "output": "namespace/container-quest unchanged\nservice/ai unchanged\nservice/compute unchanged\nservice/util unchanged\ndeployment.apps/ai unchanged\ndeployment.apps/compute unchanged\ndeployment.apps/util unchanged",
+      "exitCode": 0,
+      "ms": 567
+    },
+    "k8s-why:1": {
+      "command": "kubectl get nodes",
+      "output": "NAME                            STATUS   ROLES           AGE    VERSION\ncontainer-quest-control-plane   Ready    control-plane   4h5m   v1.36.1\ncontainer-quest-worker          Ready    <none>          4h5m   v1.36.1\ncontainer-quest-worker2         Ready    <none>          4h5m   v1.36.1",
+      "exitCode": 0,
+      "ms": 314
+    },
+    "k8s-why:2": {
+      "command": "kubectl get pods -n container-quest -o wide",
+      "output": "NAME                      READY   STATUS    RESTARTS   AGE     IP            NODE                      NOMINATED NODE   READINESS GATES\nai-854c7c67df-84wpx       1/1     Running   0          78m     10.244.1.4    container-quest-worker2   <none>           <none>\ncompute-f78b5cb74-dznb2   1/1     Running   0          5m21s   10.244.2.24   container-quest-worker    <none>           <none>\ncompute-f78b5cb74-qkz76   1/1     Running   0          5m15s   10.244.1.20   container-quest-worker2   <none>           <none>\nutil-68bcd76c75-c2bph     1/1     Running   0          78m     10.244.1.2    container-quest-worker2   <none>           <none>\nutil-68bcd76c75-jhgpd     1/1     Running   0          78m     10.244.2.2    container-quest-worker    <none>           <none>",
+      "exitCode": 0,
+      "ms": 310
+    },
+    "k8s-why:3": {
+      "command": "kubectl get deployments -n container-quest",
+      "output": "NAME      READY   UP-TO-DATE   AVAILABLE   AGE\nai        1/1     1            1           78m\ncompute   2/2     2            2           78m\nutil      2/2     2            2           78m",
+      "exitCode": 0,
+      "ms": 307
+    },
+    "k8s-identity:0": {
+      "command": "kubectl port-forward -n container-quest svc/compute 9900:9000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s localhost:9900/meta; echo; kill $PF 2>/dev/null",
+      "output": "{\"service\":\"compute\",\"language\":\"c\",\"version\":\"1.0.0\",\"gitSha\":\"ba1962f\",\"buildTime\":\"2026-07-29T18:12:40Z\",\"hostname\":\"compute-f78b5cb74-dznb2\",\"podName\":\"compute-f78b5cb74-dznb2\",\"nodeName\":\"container-quest-worker\",\"namespace\":\"container-quest\",\"uptimeSec\":325,\"requests\":97,\"pid\":1}",
+      "exitCode": 0,
+      "ms": 4307
+    },
+    "k8s-identity:1": {
+      "command": "kubectl port-forward -n container-quest svc/ai 9901:8000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s -o /dev/null -w 'status %{http_code}\\n' localhost:9901/healthz; kill $PF 2>/dev/null",
+      "output": "status 200",
+      "exitCode": 1,
+      "ms": 4358
+    },
+    "k8s-selfheal:0": {
+      "command": "kubectl get pods -n container-quest -l app=compute",
+      "output": "NAME                      READY   STATUS    RESTARTS   AGE\ncompute-f78b5cb74-dznb2   1/1     Running   0          5m31s\ncompute-f78b5cb74-qkz76   1/1     Running   0          5m25s",
+      "exitCode": 0,
+      "ms": 336
+    },
+    "k8s-selfheal:1": {
+      "command": "kubectl delete pod -n container-quest $(kubectl get pods -n container-quest -l app=compute -o jsonpath='{.items[0].metadata.name}')",
+      "output": "pod \"compute-f78b5cb74-dznb2\" deleted from container-quest namespace",
+      "exitCode": 0,
+      "ms": 30863
+    },
+    "k8s-selfheal:2": {
+      "command": "kubectl get pods -n container-quest -l app=compute",
+      "output": "NAME                      READY   STATUS    RESTARTS   AGE\ncompute-f78b5cb74-9qrf7   1/1     Running   0          31s\ncompute-f78b5cb74-qkz76   1/1     Running   0          5m56s",
+      "exitCode": 0,
+      "ms": 366
+    },
+    "k8s-scaling:0": {
+      "command": "kubectl scale deployment compute -n container-quest --replicas=5",
+      "output": "deployment.apps/compute scaled",
+      "exitCode": 0,
+      "ms": 323
+    },
+    "k8s-scaling:1": {
+      "command": "sleep 8; kubectl get pods -n container-quest -l app=compute -o wide --no-headers | awk '{print $1, $3, $7}'",
+      "output": "compute-f78b5cb74-5q6xq Running container-quest-worker2\ncompute-f78b5cb74-6c5c8 Running container-quest-worker\ncompute-f78b5cb74-9qrf7 Running container-quest-worker\ncompute-f78b5cb74-b756c Running container-quest-worker\ncompute-f78b5cb74-qkz76 Running container-quest-worker2",
+      "exitCode": 0,
+      "ms": 8355
+    },
+    "k8s-scaling:2": {
+      "command": "kubectl get endpoints compute -n container-quest",
+      "output": "NAME      ENDPOINTS                                                        AGE\ncompute   10.244.1.20:9000,10.244.1.30:9000,10.244.2.31:9000 + 2 more...   79m\n\nWarning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice",
+      "exitCode": 0,
+      "ms": 317
+    },
+    "k8s-scaling:3": {
+      "command": "kubectl scale deployment compute -n container-quest --replicas=2",
+      "output": "deployment.apps/compute scaled",
+      "exitCode": 0,
+      "ms": 316
+    },
+    "k8s-rollout:0": {
+      "command": "kubectl set env deployment/compute -n container-quest SERVICE_VERSION=2.0.0",
+      "output": "deployment.apps/compute env updated",
+      "exitCode": 0,
+      "ms": 328
+    },
+    "k8s-rollout:1": {
+      "command": "for i in 1 2 3 4 5; do echo \"$(date +%H:%M:%S)  $(kubectl get pods -n container-quest -l app=compute --no-headers | awk '{print $3}' | sort | uniq -c | tr '\\n' ' ')\"; sleep 3; done",
+      "output": "13:36:33     1 ContainerCreating    2 Running    3 Terminating \n13:36:36     3 Running    3 Terminating \n13:36:39     3 Running    4 Terminating \n13:36:42     3 Running    4 Terminating \n13:36:45     2 Running    5 Terminating",
+      "exitCode": 0,
+      "ms": 15609
+    },
+    "k8s-rollout:2": {
+      "command": "kubectl rollout status deployment/compute -n container-quest --timeout=90s",
+      "output": "deployment \"compute\" successfully rolled out",
+      "exitCode": 0,
+      "ms": 353
+    },
+    "k8s-rollout:3": {
+      "command": "kubectl rollout undo deployment/compute -n container-quest",
+      "output": "deployment.apps/compute rolled back\n\nWarning: resource deployments/compute was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.",
+      "exitCode": 0,
+      "ms": 332
+    },
+    "k8s-probes:0": {
+      "command": "kubectl get deployment compute -n container-quest -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}{\"\\n\"}{.spec.template.spec.containers[0].readinessProbe}{\"\\n\"}'",
+      "output": "{\"failureThreshold\":3,\"httpGet\":{\"path\":\"/healthz\",\"port\":9000,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":2,\"periodSeconds\":10,\"successThreshold\":1,\"timeoutSeconds\":1}\n{\"failureThreshold\":3,\"httpGet\":{\"path\":\"/readyz\",\"port\":9000,\"scheme\":\"HTTP\"},\"initialDelaySeconds\":1,\"periodSeconds\":5,\"successThreshold\":1,\"timeoutSeconds\":1}",
+      "exitCode": 0,
+      "ms": 324
+    },
+    "k8s-probes:1": {
+      "command": "kubectl get events -n container-quest --sort-by=.lastTimestamp 2>/dev/null | tail -12",
+      "output": "17s         Normal   Started             pod/compute-59bb8df4f7-2x5vx    Container started\n12s         Normal   Scheduled           pod/compute-59bb8df4f7-4q6xh    Successfully assigned container-quest/compute-59bb8df4f7-4q6xh to container-quest-worker2\n12s         Normal   SuccessfulCreate    replicaset/compute-59bb8df4f7   Created pod: compute-59bb8df4f7-4q6xh\n12s         Normal   Killing             pod/compute-f78b5cb74-5q6xq     Stopping container compute\n11s         Normal   Created             pod/compute-59bb8df4f7-4q6xh    Container created\n11s         Normal   Pulled              pod/compute-59bb8df4f7-4q6xh    Container image \"quest/compute:dev\" already present on machine and can be accessed by the pod\n11s         Normal   Started             pod/compute-59bb8df4f7-4q6xh    Container started\n6s          Normal   Killing             pod/compute-f78b5cb74-qkz76     Stopping container compute\n1s          Normal   Started             pod/compute-f78b5cb74-lw586     Container started\n1s          Normal   Scheduled           pod/compute-f78b5cb74-lw586     Successfully assigned container-quest/compute-f78b5cb74-lw586 to container-quest-worker\n1s          Normal   Created             pod/compute-f78b5cb74-lw586     Container created\n1s          Normal   Pulled              pod/compute-f78b5cb74-lw586     Container image \"quest/compute:dev\" already present on machine and can be accessed by the pod",
+      "exitCode": 0,
+      "ms": 351
+    },
+    "k8s-probes:2": {
+      "command": "kubectl describe pod -n container-quest $(kubectl get pods -n container-quest -l app=compute -o jsonpath='{.items[0].metadata.name}') | tail -25",
+      "output": "Conditions:\n  Type                        Status\n  PodReadyToStartContainers   True \n  Initialized                 True \n  Ready                       True \n  ContainersReady             True \n  PodScheduled                True \nVolumes:\n  kube-api-access-x4w4z:\n    Type:                    Projected (a volume that contains injected data from multiple sources)\n    TokenExpirationSeconds:  3607\n    ConfigMapName:           kube-root-ca.crt\n    Optional:                false\n    DownwardAPI:             true\nQoS Class:                   Burstable\nNode-Selectors:              <none>\nTolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s\n                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s\nEvents:\n  Type    Reason     Age   From               Message\n  ----    ------     ----  ----               -------\n  Normal  Scheduled  17s   default-scheduler  Successfully assigned container-quest/compute-59bb8df4f7-2x5vx to container-quest-worker\n  Normal  Pulled     17s   kubelet            spec.containers{compute}: Container image \"quest/compute:dev\" already present on machine and can be accessed by the pod\n  Normal  Created    17s   kubelet            spec.containers{compute}: Container created\n  Normal  Started    17s   kubelet            spec.containers{compute}: Container started",
+      "exitCode": 0,
+      "ms": 353
+    },
+    "own-dockerfile:0": {
+      "command": "mkdir -p ~/quest-myapp && cd ~/quest-myapp && printf 'const http = require(\"http\");\\nconst PORT = process.env.PORT || 4000;\\nhttp.createServer((req, res) => {\\n  res.writeHead(200, {\"content-type\": \"application/json\"});\\n  res.end(JSON.stringify({ app: \"my-first-container\", host: require(\"os\").hostname() }));\\n}).listen(PORT, \"0.0.0.0\", () => console.log(\"listening on \" + PORT));\\n' > server.js && printf 'FROM node:24-alpine\\nWORKDIR /app\\nCOPY server.js .\\nEXPOSE 4000\\nCMD [\"node\", \"server.js\"]\\n' > Dockerfile && ls -la",
+      "output": "total 16\ndrwxr-xr-x@  4 danielporter  staff   128 Jul 29 13:36 .\ndrwxr-x---+ 42 danielporter  staff  1344 Jul 29 13:36 ..\n-rw-r--r--@  1 danielporter  staff    88 Jul 29 13:36 Dockerfile\n-rw-r--r--@  1 danielporter  staff   324 Jul 29 13:36 server.js",
+      "exitCode": 0,
+      "ms": 282
+    },
+    "own-dockerfile:1": {
+      "command": "cd ~/quest-myapp && docker build -t myapp:1.0.0 .",
+      "output": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 125B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:24-alpine\n#2 DONE 0.5s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 362B done\n#4 DONE 0.0s\n\n#5 [1/3] FROM docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd\n#5 resolve docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd 0.0s done\n#5 DONE 0.0s\n\n#6 [2/3] WORKDIR /app\n#6 CACHED\n\n#7 [3/3] COPY server.js .\n#7 CACHED\n\n#8 exporting to image\n… (8 more lines)",
+      "exitCode": 0,
+      "ms": 1192
+    },
+    "own-dockerfile:2": {
+      "command": "docker run -d --name myapp -p 4000:4000 myapp:1.0.0 && sleep 2 && curl -s localhost:4000",
+      "output": "429ba4bfebf326963510708fbd82143f3d19d18d8cc45cdca2e73b2be675cc8f\n{\"app\":\"my-first-container\",\"host\":\"429ba4bfebf3\"}",
+      "exitCode": 0,
+      "ms": 2510
+    },
+    "own-dockerfile:3": {
+      "command": "docker rm -f myapp",
+      "output": "myapp",
+      "exitCode": 0,
+      "ms": 419
+    },
+    "own-deploy:0": {
+      "command": "kind load docker-image myapp:1.0.0 --name container-quest",
+      "output": "Image: \"myapp:1.0.0\" with ID \"sha256:025cf9115f27a9927381cbe49b46adb6ea70dbeeac31928490f66f551b32601f\" not yet present on node \"container-quest-control-plane\", loading...\nImage: \"myapp:1.0.0\" with ID \"sha256:025cf9115f27a9927381cbe49b46adb6ea70dbeeac31928490f66f551b32601f\" not yet present on node \"container-quest-worker\", loading...\nImage: \"myapp:1.0.0\" with ID \"sha256:025cf9115f27a9927381cbe49b46adb6ea70dbeeac31928490f66f551b32601f\" not yet present on node \"container-quest-worker2\", loading...",
+      "exitCode": 0,
+      "ms": 1820
+    },
+    "own-deploy:1": {
+      "command": "kubectl create deployment myapp --image=myapp:1.0.0 --replicas=2 -n container-quest && kubectl patch deployment myapp -n container-quest -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myapp\",\"imagePullPolicy\":\"IfNotPresent\"}]}}}}'",
+      "output": "deployment.apps/myapp created\ndeployment.apps/myapp patched",
+      "exitCode": 0,
+      "ms": 414
+    },
+    "own-deploy:2": {
+      "command": "sleep 10; kubectl get pods -n container-quest -l app=myapp -o wide",
+      "output": "NAME                     READY   STATUS    RESTARTS   AGE   IP            NODE                      NOMINATED NODE   READINESS GATES\nmyapp-657c6995c8-72bjh   1/1     Running   0          10s   10.244.1.33   container-quest-worker2   <none>           <none>\nmyapp-657c6995c8-v7rqs   1/1     Running   0          10s   10.244.2.36   container-quest-worker    <none>           <none>",
+      "exitCode": 0,
+      "ms": 10346
+    },
+    "own-deploy:3": {
+      "command": "kubectl expose deployment myapp -n container-quest --port=4000 --target-port=4000 >/dev/null; kubectl port-forward -n container-quest svc/myapp 4400:4000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s localhost:4400; echo; curl -s localhost:4400; echo; kill $PF 2>/dev/null",
+      "output": "{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-72bjh\"}\n{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-72bjh\"}",
+      "exitCode": 0,
+      "ms": 4386
+    },
+    "own-deploy:4": {
+      "command": "kubectl run lb-demo --rm -i --restart=Never --image=alpine:3.23 -n container-quest -- sh -c 'for i in 1 2 3 4 5 6 7 8; do wget -qO- myapp:4000; echo; done'",
+      "output": "{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-72bjh\"}\n{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-72bjh\"}\n{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-v7rqs\"}\n{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-72bjh\"}\n{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-v7rqs\"}\n{\"app\":\"my-first-container\",\"host\":\"myapp-657c6995c8-72bjh\"}\npod \"lb-demo\" deleted from container-quest namespace\n\nAll commands and output from this session will be recorded in container logs, including credentials and sensitive information passed through the command prompt.\nIf you don't see a command prompt, try pressing enter.",
+      "exitCode": 0,
+      "ms": 2260
+    },
+    "where-next:0": {
+      "command": "kubectl delete deployment,service myapp -n container-quest 2>/dev/null; echo 'cleaned up'",
+      "output": "deployment.apps \"myapp\" deleted from container-quest namespace\nservice \"myapp\" deleted from container-quest namespace\ncleaned up",
+      "exitCode": 0,
+      "ms": 366
+    },
+    "where-next:1": {
+      "command": "kubectl get all -n container-quest",
+      "output": "NAME                           READY   STATUS        RESTARTS   AGE\npod/ai-854c7c67df-84wpx        1/1     Running       0          80m\npod/compute-59bb8df4f7-2x5vx   1/1     Terminating   0          41s\npod/compute-59bb8df4f7-4q6xh   1/1     Terminating   0          36s\npod/compute-f78b5cb74-lw586    1/1     Running       0          25s\npod/compute-f78b5cb74-qkz76    1/1     Terminating   0          6m47s\npod/compute-f78b5cb74-ts47t    1/1     Running       0          20s\npod/myapp-657c6995c8-72bjh     1/1     Terminating   0          17s\npod/myapp-657c6995c8-v7rqs     1/1     Terminating   0          17s\npod/util-68bcd76c75-c2bph      1/1     Running       0          80m\npod/util-68bcd76c75-jhgpd      1/1     Running       0          80m\n\nNAME              TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE\nservice/ai        NodePort   10.96.12.203    <none>        8000:30080/TCP   80m\nservice/compute   NodePort   10.96.185.197   <none>        9000:30090/TCP   80m\nservice/util      NodePort   10.96.233.121   <none>        8080:30081/TCP   80m\n\nNAME                      READY   UP-TO-DATE   AVAILABLE   AGE\ndeployment.apps/ai        1/1     1            1           80m\ndeployment.apps/compute   2/2     2            2           80m\ndeployment.apps/util      2/2     2            2           80m\n\nNAME                                 DESIRED   CURRENT   READY   AGE\nreplicaset.apps/ai-854c7c67df        1         1         1       80m\nreplicaset.apps/compute-59bb8df4f7   0         0         0       78m\nreplicaset.apps/compute-f78b5cb74    2         2         2       80m\nreplicaset.apps/util-68bcd76c75      2         2         2       80m",
+      "exitCode": 0,
+      "ms": 333
+    }
+  }
+}
