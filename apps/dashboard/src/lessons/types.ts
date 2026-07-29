@@ -23,6 +23,8 @@ export type Check =
   | { kind: "restarts"; service: string; delta: number }
   /** Its uptime went DOWN, which can only mean the process started over. */
   | { kind: "restarted"; service: string }
+  /** Its container id CHANGED — this is a different container than before. */
+  | { kind: "replaced"; service: string }
   /** It is running but refusing traffic. */
   | { kind: "unready"; service: string };
 
@@ -59,6 +61,8 @@ export interface Probe {
   restarts: number;
   ready: boolean;
   up: boolean;
+  /** The container's id. Survives a restart; changes on replacement. */
+  hostname: string;
 }
 
 export type ProbeMap = Record<string, Probe>;
@@ -85,6 +89,17 @@ export function evaluate(check: Check, baseline: ProbeMap, now: ProbeMap): boole
       // Uptime running backwards is the one signal that cannot be faked by a
       // slow poll: a process that restarted is younger than it used to be.
       return before !== undefined && after.uptimeSec < before.uptimeSec;
+
+    case "replaced":
+      // The single cleanest signal that a container was destroyed and rebuilt
+      // rather than merely restarted: a restart keeps the id, a replacement
+      // cannot. This is the distinction the whole lesson is about.
+      return (
+        before !== undefined &&
+        after.hostname !== "" &&
+        before.hostname !== "" &&
+        after.hostname !== before.hostname
+      );
 
     case "unready":
       return after.up && !after.ready;

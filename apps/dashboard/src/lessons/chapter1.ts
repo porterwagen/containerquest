@@ -120,7 +120,6 @@ export const CHAPTER_1: Lesson[] = [
       "The precise rule: a container gets a private scratch filesystem when it is created. Anything written there lives as long as that specific container. Restarting the program inside does not touch it. Destroying the container erases it permanently.",
       "This catches people out because restarting and replacing look identical from the outside — the service disappears for a moment and comes back — but one keeps your files and the other doesn't.",
       "You're about to prove both halves yourself, which is considerably more convincing than being told.",
-      "One note: the last step needs to run from this project's folder. If your terminal isn't there, run cd ~/Documents/containerquest first.",
     ],
     steps: [
       {
@@ -131,25 +130,27 @@ export const CHAPTER_1: Lesson[] = [
         check: { kind: "manual", label: "It printed: I was here" },
       },
       {
-        instruction: "Restart the service, then check whether your file survived.",
+        instruction:
+          "Restart the service and check whether your file survived. This prints a plain answer either way.",
         command:
-          "docker restart container-quest-ai-1 && sleep 3 && docker exec container-quest-ai-1 cat /tmp/note.txt",
-        saw: "Still there. Restarting stopped and started the program, but the container around it is the same one as before, scratch files and all. On the Dashboard, the AI card's uptime just reset to zero — while its container ID stayed exactly the same. Remember that pairing.",
+          "docker restart container-quest-ai-1 && sleep 4 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
+        saw: "STILL THERE. Restarting stopped and started the program, but the container around it is the same one as before, scratch files and all. On the Dashboard the AI card's uptime just reset to zero — while its container ID stayed exactly the same. Remember that pairing.",
         check: { kind: "restarted", service: "ai" },
       },
       {
-        instruction: "Now destroy the container entirely and build a replacement from the template.",
+        instruction:
+          "Now destroy the container completely and build a replacement from the template. This one command moves into the project folder first, so it works from anywhere.",
         command:
-          "docker compose -f infra/compose/docker-compose.yml up -d --force-recreate ai && sleep 5 && docker exec container-quest-ai-1 cat /tmp/note.txt",
-        saw: "\"No such file or directory.\" The old container is gone. This is a different one, created fresh from a template that never contained your note. Check the Dashboard again: this time the container ID changed too. That's how you tell a restart from a replacement, and it's the difference between keeping your data and losing it.",
-        check: { kind: "manual", label: "I saw: No such file or directory" },
+          "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --force-recreate ai && sleep 6 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
+        saw: "GONE — and that is the correct answer. The old container was destroyed. This is a different one, built fresh from a template that never contained your note. Check the Dashboard: this time the container ID changed too, which is exactly how you tell a replacement from a restart.",
+        check: { kind: "replaced", service: "ai" },
       },
     ],
     takeaway:
       "Restarting keeps a container's files; replacing it does not. Anything you actually need to keep — a database, uploads — has to live outside the container.",
     source: {
       path: "infra/compose/docker-compose.yml",
-      note: "The database in this project has one extra line telling it to store data outside its container, for exactly this reason.",
+      note: "The database in this project has one extra line telling it to store its data outside its container, for exactly this reason.",
     },
   },
 ];

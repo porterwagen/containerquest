@@ -38,6 +38,7 @@ export async function GET() {
       restarts: restarts.get(entry.def.id) ?? 0,
       ready: entry.status === "up",
       up: entry.status !== "down",
+      hostname: entry.meta?.hostname ?? "",
     };
   }
 
