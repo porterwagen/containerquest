@@ -171,8 +171,13 @@ static void *handle_conn(void *arg) {
   char method[8] = {0}, path[256] = {0};
   sscanf(buf, "%7s %255s", method, path);
 
+  /* The dashboard polls this service every couple of seconds to draw its
+   * card. Counting those would make g_requests a measure of the monitoring
+   * rather than of real traffic, so probes identify themselves and skip it. */
+  int is_probe = strstr(buf, "X-Quest-Probe") != NULL || strstr(buf, "x-quest-probe") != NULL;
+
   pthread_mutex_lock(&g_lock);
-  g_requests++;
+  if (!is_probe) g_requests++;
   time_t unready_until = g_unready_until, slow_until = g_slow_until;
   pthread_mutex_unlock(&g_lock);
 

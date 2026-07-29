@@ -147,7 +147,10 @@ services:
     ports: ["8000:8000"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')"]
+      # teach: The probe header again. A container's own healthcheck runs every
+      # teach: few seconds forever, so without it this service's request counter
+      # teach: would tick up on its own and measure nothing but the healthcheck.
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'X-Quest-Probe':'1'}))"]
       interval: 5s
       timeout: 3s
       retries: 6
@@ -178,7 +181,7 @@ services:
       # teach: busybox wget, already in the alpine base — no extra package, no
       # teach: extra layer. Adding curl just for a healthcheck is a common way
       # teach: to grow an image for no reason.
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/healthz"]
+      test: ["CMD", "wget", "-qO-", "--header=X-Quest-Probe: 1", "http://127.0.0.1:3001/healthz"]
       interval: 5s
       timeout: 3s
       retries: 6
@@ -216,7 +219,7 @@ services:
       # teach: "connection refused" against a server that is working perfectly,
       # teach: reachable from everywhere except its own healthcheck. One of the
       # teach: most common and most confusing container bugs there is.
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      test: ["CMD", "wget", "-qO-", "--header=X-Quest-Probe: 1", "http://127.0.0.1:3000/healthz"]
       interval: 5s
       timeout: 3s
       retries: 6

@@ -141,7 +141,9 @@ const readBody = (req: http.IncomingMessage): Promise<string> =>
   });
 
 const server = http.createServer(async (req, res) => {
-  requests++;
+  // Excluded: the dashboard's own polling, which would otherwise make this
+  // counter a measure of the monitoring rather than of real traffic.
+  if (!req.headers["x-quest-probe"]) requests++;
   if (Date.now() < slowUntil) await new Promise((r) => setTimeout(r, 2_000));
 
   const path = (req.url ?? "/").split("?")[0];

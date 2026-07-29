@@ -33,6 +33,12 @@ async function probeOne(def: ServiceDef): Promise<FleetEntry> {
     const res = await fetch(`${base}/meta`, {
       signal: AbortSignal.timeout(2_500),
       cache: "no-store",
+      // Identifies this as monitoring rather than real traffic, so the
+      // service doesn't count it. Without this the request counter measures
+      // how often the dashboard looks at the service — the observer effect,
+      // and it would make the course's "did you run the command?" checks
+      // pass on their own.
+      headers: { "x-quest-probe": "1" },
     });
     const latencyMs = Math.round(performance.now() - t0);
 
@@ -61,6 +67,7 @@ async function probeOne(def: ServiceDef): Promise<FleetEntry> {
       const ready = await fetch(`${base}/readyz`, {
         signal: AbortSignal.timeout(2_000),
         cache: "no-store",
+        headers: { "x-quest-probe": "1" },
       });
       if (!ready.ok) status = "unready";
     } catch {

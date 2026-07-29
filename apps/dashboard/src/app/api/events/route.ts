@@ -123,6 +123,7 @@ export async function GET(request: Request) {
             const res = await fetch(`${workerUrl()}/queue`, {
               signal: AbortSignal.timeout(2_000),
               cache: "no-store",
+              headers: { "x-quest-probe": "1" },
             });
             if (res.ok) {
               const q = await res.json();

@@ -50,7 +50,10 @@ app = FastAPI(title="Container Quest — AI", lifespan=lifespan)
 
 @app.middleware("http")
 async def instrument(request, call_next):
-    STATE["requests"] += 1
+    # Dashboard polls announce themselves so they don't inflate the count
+    # they are trying to report. Monitoring should not move the needle.
+    if not request.headers.get("x-quest-probe"):
+        STATE["requests"] += 1
     if time.monotonic() < STATE["slow_until"]:
         await asyncio.sleep(2.0)
     t0 = time.monotonic()

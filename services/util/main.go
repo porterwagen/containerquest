@@ -95,7 +95,12 @@ func targetName(rawURL string) string {
 // framework. A handler is just a function, so wrapping one is just a closure.
 func instrument(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		requests.Add(1)
+		// The dashboard polls /meta constantly to draw its cards. Counting
+		// those would mean this number measures the monitoring, not the
+		// traffic — so probes announce themselves and are excluded.
+		if r.Header.Get("X-Quest-Probe") == "" {
+			requests.Add(1)
+		}
 		if time.Now().UnixMilli() < slowUntil.Load() {
 			time.Sleep(2 * time.Second)
 		}
@@ -259,7 +264,9 @@ func fanOutHealth(ctx context.Context) map[string]bool {
 		go func(addr string) {
 			defer wg.Done()
 			name, _, _ := strings.Cut(addr, ":")
-			healthy := fetch(ctx, "http://"+addr+"/healthz") != nil
+			// Marked as a probe: this service checks its peers' health
+			// constantly, and those checks must not look like user traffic.
+			healthy := fetchProbe(ctx, "http://"+addr+"/healthz") != nil
 			mu.Lock()
 			out[name] = healthy
 			mu.Unlock()
@@ -270,6 +277,30 @@ func fanOutHealth(ctx context.Context) map[string]bool {
 }
 
 var client = &http.Client{Timeout: 3 * time.Second}
+
+// fetchProbe is fetch's quiet twin: same request, but flagged as monitoring so
+// the far end does not count it, and no span is recorded for it. Health checks
+// happen constantly and would drown out the real traffic on the graph.
+func fetchProbe(ctx context.Context, url string) json.RawMessage {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("X-Quest-Probe", "1")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil
+	}
+	return json.RawMessage(body)
+}
 
 // The trace header name, shared with every other service in the fleet.
 const traceHeader = "X-Quest-Trace"
