@@ -71,9 +71,10 @@ export function ServiceCard({ entry, index }: { entry: FleetEntry; index: number
 
       {meta ? (
         <div className="mt-3.5 grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-edge pt-3">
-          {/* The hostname is the single most useful field on this card: watch it
-              change on restart and "containers are disposable" stops being an
-              abstraction. */}
+          {/* Hostname survives a restart — Docker restarts the SAME container,
+              so only uptime resets. It changes when the container is REPLACED
+              (recreated, or rescheduled as a new pod). Watching which of those
+              two happened is how you tell a restart from a reschedule. */}
           <Stat label="container" value={meta.hostname} mono />
           <Stat label="pod" value={meta.podName ?? "— (docker)"} mono />
           <Stat label="version" value={`v${meta.version}`} mono />

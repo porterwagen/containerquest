@@ -14,6 +14,55 @@ x-build-args: &build-args
   BUILD_TIME: ${BUILD_TIME:-unknown}
 
 services:
+  # --- The control plane -----------------------------------------------------
+
+  # teach: The dashboard needs to restart containers and watch daemon events.
+  # teach: The naive way is to bind-mount /var/run/docker.sock into it — which
+  # teach: hands that container the daemon's ENTIRE API. The daemon runs as
+  # teach: root, so anything holding that socket can start a privileged
+  # teach: container that mounts your host filesystem. It is root on your
+  # teach: machine, and the container boundary does not contain it.
+  # teach:
+  # teach: (`:ro` does not help. It makes the socket FILE read-only; it does
+  # teach: nothing to the API calls you send over it.)
+  # teach:
+  # teach: So instead: a proxy holds the socket, and publishes an HTTP API with
+  # teach: an explicit allowlist. The dashboard gets exactly four capabilities
+  # teach: and no others. This is *precisely* the shape of the Kubernetes RBAC
+  # teach: you will write in Phase 4 — a ServiceAccount that may list pods and
+  # teach: scale one Deployment, and nothing more. Least privilege, twice.
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3
+    environment:
+      CONTAINERS: 1   # list and inspect containers
+      EVENTS: 1       # subscribe to the daemon event stream
+      POST: 1         # required for restart (write operations)
+      # Everything else stays off. Each of these would be a privilege
+      # escalation path, and this is the interesting part of the file:
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      EXEC: 0         # `docker exec` into any container
+      SECRETS: 0
+      SWARM: 0
+      SERVICES: 0
+      SYSTEM: 0
+      INFO: 0
+      AUTH: 0
+      BUILD: 0
+      COMMIT: 0
+      CONFIGS: 0
+      DISTRIBUTION: 0
+      NODES: 0
+      PLUGINS: 0
+      SESSION: 0
+      TASKS: 0
+    volumes:
+      # Only THIS container touches the socket, and it is a small, audited
+      # program whose entire job is refusing requests.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
   # --- Stateful dependencies -------------------------------------------------
 
   postgres:
@@ -79,6 +128,10 @@ services:
       SERVICE_VERSION: "1.0.0"
       GIT_SHA: ${GIT_SHA:-dev}
       PEERS: "ai:8000,compute:9000"
+      # teach: Where this service posts its trace spans. It speaks the Redis
+      # teach: wire protocol directly — see services/util/resp.go — so it keeps
+      # teach: a zero-dependency go.mod.
+      REDIS_URL: redis://redis:6379
     ports: ["8080:8080"]
     restart: unless-stopped
     depends_on: [compute, ai]
@@ -125,7 +178,7 @@ services:
       # teach: busybox wget, already in the alpine base — no extra package, no
       # teach: extra layer. Adding curl just for a healthcheck is a common way
       # teach: to grow an image for no reason.
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/healthz"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/healthz"]
       interval: 5s
       timeout: 3s
       retries: 6
@@ -147,10 +200,23 @@ services:
       # teach: Tells the dashboard to reach peers by service name rather than
       # teach: localhost. Inside a container, localhost is a dead end.
       QUEST_IN_CONTAINER: "1"
+      REDIS_URL: redis://redis:6379
+      COMPOSE_PROJECT_NAME: container-quest
+      QUEST_ALLOW_DOCKER_SOCKET: "1"
+      # teach: An HTTP endpoint, not a socket path. The dashboard has no access
+      # teach: to /var/run/docker.sock at all — only to the four capabilities
+      # teach: the proxy above is willing to forward.
+      DOCKER_HOST: tcp://socket-proxy:2375
     ports: ["3000:3000"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      # teach: 127.0.0.1, NOT localhost. Inside the container "localhost"
+      # teach: resolves to the IPv6 address ::1 first, and Next binds 0.0.0.0 —
+      # teach: which is IPv4-only. The result is a healthcheck that reports
+      # teach: "connection refused" against a server that is working perfectly,
+      # teach: reachable from everywhere except its own healthcheck. One of the
+      # teach: most common and most confusing container bugs there is.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
       interval: 5s
       timeout: 3s
       retries: 6

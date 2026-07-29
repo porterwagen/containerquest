@@ -14,9 +14,9 @@ import type { FleetEntry } from "@/lib/fleet";
 const FIELDS = [
   { key: "language", note: "the only field that differs by design" },
   { key: "version", note: "changes during a rolling deploy" },
-  { key: "hostname", note: "container id — watch it change on restart" },
+  { key: "hostname", note: "container id — survives a restart, changes on replacement" },
   { key: "podName", note: "null under Docker, set under Kubernetes" },
-  { key: "uptimeSec", note: "resets to 0 when the supervisor restarts it" },
+  { key: "uptimeSec", note: "resets to 0 on restart — the reliable crash signal" },
   { key: "requests", note: "counted in-process, so it resets too" },
   { key: "pid", note: "almost always 1 — your app IS the container" },
 ] as const;

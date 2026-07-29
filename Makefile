@@ -55,6 +55,17 @@ load:
 deploy:
 	kubectl apply -k infra/k8s/overlays/local
 
+## demo: build and serve the browser-only demo on :3100 (no Docker needed)
+demo:
+	NEXT_PUBLIC_QUEST_MODE=demo npm run build --workspace @quest/dashboard
+	@cp -R apps/dashboard/.next/static apps/dashboard/.next/standalone/apps/dashboard/.next/static
+	@echo "→ http://localhost:3100"
+	@cd apps/dashboard && PORT=3100 NEXT_PUBLIC_QUEST_MODE=demo node .next/standalone/apps/dashboard/server.js
+
+## deploy-demo: publish the demo build to Vercel (requires `vercel login`)
+deploy-demo:
+	npx vercel deploy --prod
+
 ## snippets: regenerate the in-app code snippets from the real files on disk
 snippets:
 	node scripts/collect-snippets.mjs

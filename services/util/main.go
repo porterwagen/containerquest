@@ -13,9 +13,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -73,17 +75,42 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-// instrument counts requests, honours the "slow" chaos action, and logs
-// timing — the Go equivalent of middleware, without a framework.
+// traceKey is the context key carrying the trace id down to fetch().
+// An empty struct type rather than a string, so it cannot collide with a key
+// set by any other package — the standard Go idiom for context keys.
+type traceKey struct{}
+
+// targetName turns "http://ai:8000/meta" into "ai" for span labelling.
+func targetName(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "unknown"
+	}
+	host, _, _ := strings.Cut(u.Host, ":")
+	return host
+}
+
+// instrument counts requests, honours the "slow" chaos action, propagates the
+// trace id, and logs timing — the Go equivalent of middleware, without a
+// framework. A handler is just a function, so wrapping one is just a closure.
 func instrument(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
 		if time.Now().UnixMilli() < slowUntil.Load() {
 			time.Sleep(2 * time.Second)
 		}
+
+		// Accept an inbound trace id, or start a new trace if we are the entry
+		// point. Either way every downstream call inherits it.
+		traceID := r.Header.Get(traceHeader)
+		if traceID == "" {
+			traceID = fmt.Sprintf("%d-util", time.Now().UnixNano())
+		}
+		r = r.WithContext(context.WithValue(r.Context(), traceKey{}, traceID))
+
 		t0 := time.Now()
 		next(w, r)
-		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(t0).Round(time.Millisecond))
+		log.Printf("%s %s %v trace=%s", r.Method, r.URL.Path, time.Since(t0).Round(time.Millisecond), traceID)
 	}
 }
 
@@ -244,16 +271,58 @@ func fanOutHealth(ctx context.Context) map[string]bool {
 
 var client = &http.Client{Timeout: 3 * time.Second}
 
+// The trace header name, shared with every other service in the fleet.
+const traceHeader = "X-Quest-Trace"
+
+var spans = newRespClient(env("REDIS_URL", "redis://redis:6379"))
+
+// recordSpan reports one outbound call to the Redis stream the dashboard reads.
+//
+// Fire-and-forget on purpose: telemetry must never slow down or fail the
+// request it is describing. If Redis is down we lose visibility, which is bad;
+// if Redis being down broke request handling, that would be far worse.
+func recordSpan(traceID, to string, started time.Time, status int) {
+	if traceID == "" {
+		return
+	}
+	go func() {
+		err := spans.xaddSpan("quest:spans", map[string]string{
+			"traceId": traceID,
+			"from":    "util",
+			"to":      to,
+			"ms":      fmt.Sprintf("%d", time.Since(started).Milliseconds()),
+			"status":  fmt.Sprintf("%d", status),
+			"at":      fmt.Sprintf("%d", time.Now().UnixMilli()),
+		})
+		if err != nil {
+			log.Printf("span drop: %v", err)
+		}
+	}()
+}
+
+// fetch propagates the incoming trace id to the next hop. This one line is
+// what turns a pile of unrelated timings into a connected trace — and
+// forgetting it is why so many traces mysteriously end one service early.
 func fetch(ctx context.Context, url string) json.RawMessage {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil
 	}
+
+	traceID, _ := ctx.Value(traceKey{}).(string)
+	if traceID != "" {
+		req.Header.Set(traceHeader, traceID)
+	}
+
+	started := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
+		recordSpan(traceID, targetName(url), started, 0)
 		return nil
 	}
 	defer resp.Body.Close()
+	recordSpan(traceID, targetName(url), started, resp.StatusCode)
+
 	if resp.StatusCode >= 400 {
 		return nil
 	}

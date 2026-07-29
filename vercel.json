@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "NEXT_PUBLIC_QUEST_MODE=demo npm run build --workspace @quest/dashboard",
+  "outputDirectory": "apps/dashboard/.next",
+  "installCommand": "npm ci",
+  "framework": "nextjs"
+}

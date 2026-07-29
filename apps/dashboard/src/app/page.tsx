@@ -5,10 +5,11 @@ import { FleetView } from "@/components/FleetView";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  // Server-rendered first paint, so the dashboard arrives with real data
-  // rather than a skeleton that fills in a beat later.
-  const initial = await pollFleet();
-  const mode = process.env.QUEST_MODE ?? "compose";
+  // Demo builds ship with no backend at all, so skip the poll entirely —
+  // otherwise every page load would wait on five connections that refuse.
+  const demo = process.env.NEXT_PUBLIC_QUEST_MODE === "demo";
+  const initial = demo ? [] : await pollFleet();
+  const mode = demo ? "simulator" : (process.env.QUEST_MODE ?? "compose");
 
   return (
     <main className="mx-auto max-w-[1240px] px-5 py-8 sm:px-8">
@@ -24,6 +25,15 @@ export default async function Page() {
             Five languages, one platform. Docker and Kubernetes never learn which is which —
             they just run Linux processes.
           </p>
+          {demo && (
+            <p className="mt-2 max-w-xl rounded-md border border-edge bg-panel px-3 py-2 text-[12px] leading-relaxed text-ink-faint">
+              <span className="text-beam">Demo mode. </span>
+              Everything is simulated in your browser — no server, no containers. The
+              controls are real: crash a pod, scale a deployment, run a rolling
+              deploy. Running it locally with <code className="text-ink-dim">make up</code> drives
+              actual Docker containers through the same interface.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
@@ -32,7 +42,7 @@ export default async function Page() {
         </div>
       </header>
 
-      <FleetView initial={initial} />
+      <FleetView initial={initial} mode={demo ? "demo" : "live"} />
     </main>
   );
 }
