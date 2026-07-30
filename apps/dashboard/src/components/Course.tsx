@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   LESSONS,
   chapters,
@@ -45,13 +46,7 @@ function loadProgress(): Progress {
   }
 }
 
-export function Course({
-  onOpenDashboard,
-  mode = "live",
-}: {
-  onOpenDashboard: () => void;
-  mode?: Mode;
-}) {
+export function Course({ mode = "live" }: { mode?: Mode }) {
   const [progress, setProgress] = useState<Progress>({ done: [], current: LESSONS[0]!.id });
   const [hydrated, setHydrated] = useState(false);
 
@@ -92,7 +87,6 @@ export function Course({
           done={isDone}
           mode={mode}
           onComplete={() => complete(lesson.id)}
-          onOpenDashboard={onOpenDashboard}
         />
 
         <nav className="mt-6 flex items-center justify-between gap-3 border-t border-edge pt-5">
@@ -190,13 +184,11 @@ function LessonView({
   done,
   mode,
   onComplete,
-  onOpenDashboard,
 }: {
   lesson: Lesson;
   done: boolean;
   mode: Mode;
   onComplete: () => void;
-  onOpenDashboard: () => void;
 }) {
   const [passed, setPassed] = useState<boolean[]>(() => lesson.steps.map(() => false));
   const [manual, setManual] = useState<boolean[]>(() => lesson.steps.map(() => false));
@@ -305,12 +297,12 @@ function LessonView({
               <code className="font-mono text-ink-dim">{lesson.source.path}</code>.
             </p>
           )}
-          <button
-            onClick={onOpenDashboard}
-            className="mt-4 rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+          <Link
+            href="/dashboard"
+            className="mt-4 inline-block rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
           >
             See it on the live dashboard →
-          </button>
+          </Link>
         </div>
       )}
     </article>

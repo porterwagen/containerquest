@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Container Quest — Mission Control",
+  title: "Container Quest",
   description:
-    "A miniature production platform in five languages, built to make Docker and Kubernetes visible.",
+    "Learn Docker and Kubernetes by running a real eight-container system and breaking it on purpose.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

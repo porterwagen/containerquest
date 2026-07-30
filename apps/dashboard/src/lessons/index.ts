@@ -39,5 +39,3 @@ export function chapters(): Array<{ number: number; title: string; lessons: Less
   }
   return [...map.values()].sort((a, b) => a.number - b.number);
 }
-
-export const TOTAL_MINUTES = LESSONS.reduce((sum, l) => sum + l.minutes, 0);

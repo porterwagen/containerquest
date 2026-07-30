@@ -170,8 +170,8 @@
       "ms": 294
     },
     "ports:2": {
-      "command": "curl -s --max-time 4 localhost:5555/healthz >/dev/null 2>&1 && echo 'reachable' || echo 'refused — nothing is published on 5555'",
-      "output": "refused — nothing is published on 5555",
+      "command": "curl -s --max-time 4 localhost:5555/healthz >/dev/null 2>&1 && echo 'reachable' || echo 'refused: nothing is published on 5555'",
+      "output": "refused: nothing is published on 5555",
       "exitCode": 0,
       "ms": 279
     },
