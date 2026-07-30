@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" fill="none">
+  <!-- Solid flat tile -->
+  <rect width="500" height="500" rx="96" fill="#0d1116"/>
+
+  <!-- Large container: thick, flat, high contrast -->
+  <rect x="90" y="95" width="320" height="260" rx="36" fill="#1a2430"/>
+  <rect x="90" y="95" width="320" height="260" rx="36" stroke="#38bdf8" stroke-width="22"/>
+
+  <!-- Three bold vertical ribs -->
+  <rect x="172" y="120" width="22" height="210" rx="11" fill="#38bdf8"/>
+  <rect x="239" y="120" width="22" height="210" rx="11" fill="#38bdf8"/>
+  <rect x="306" y="120" width="22" height="210" rx="11" fill="#38bdf8"/>
+
+  <!-- One thick horizontal beam -->
+  <rect x="125" y="200" width="250" height="40" rx="20" fill="#38bdf8"/>
+
+  <!-- Three large fleet dots only (read at 16px) -->
+  <circle cx="155" cy="420" r="36" fill="#4a9eff"/>
+  <circle cx="250" cy="420" r="36" fill="#ffd43b"/>
+  <circle cx="345" cy="420" r="36" fill="#34d399"/>
+</svg>
