@@ -1,7 +1,7 @@
 import type { Lesson } from "./types.ts";
 
 /**
- * Chapter 4 — When things break.
+ * Chapter 4  -  When things break.
  *
  * The most practical chapter. Everything here is a move you'd make during a
  * real incident, practiced on a system where breaking things is free.
@@ -27,6 +27,11 @@ export const CHAPTER_4: Lesson[] = [
         instruction:
           "Start a container that will immediately fail, the way a misconfigured service does.",
         command: "docker run --name quest-broken alpine:3.23 sh -c 'echo \"connecting to database...\"; sleep 1; echo \"FATAL: no such host: db\" >&2; exit 1'",
+        commandParts: [
+          { piece: "docker run --name quest-broken", meaning: "Start a named container (no --rm so it stays when it exits)" },
+          { piece: "alpine:3.23", meaning: "Tiny base image" },
+          { piece: "sh -c '... exit 1'", meaning: "Fake a crash: print an error and exit non-zero" },
+        ],
         saw: "It printed a couple of lines and stopped. In real life you often won't see this output: it scrolls past in a deploy log, or the container restarts before you look.",
         check: { kind: "manual", label: "It ran and exited" },
       },
@@ -34,18 +39,31 @@ export const CHAPTER_4: Lesson[] = [
         instruction:
           "It's not in `docker ps` any more. Find it among the stopped containers, with its exit code.",
         command: "docker ps -a --filter name=quest-broken --format 'table {{.Names}}\\t{{.Status}}'",
+        commandParts: [
+          { piece: "docker ps -a", meaning: "Include stopped containers (not just running)" },
+          { piece: "--filter name=quest-broken", meaning: "Only this demo container" },
+          { piece: "--format ... Status", meaning: "See Exited and the exit code" },
+        ],
         saw: "\"Exited (1)\". The 1 means it crashed rather than finished cleanly. If this said Exited (0), you'd be looking for a configuration problem instead: something told it to do a task and stop, when you wanted a long-running server.",
         check: { kind: "manual", label: "I saw Exited (1)" },
       },
       {
         instruction: "Now read what it said before it died. This is the step that matters.",
         command: "docker logs quest-broken",
+        commandParts: [
+          { piece: "docker logs", meaning: "What the process printed before it died" },
+          { piece: "quest-broken", meaning: "The stopped container" },
+        ],
         saw: "\"FATAL: no such host: db\". There's your answer: it couldn't resolve a hostname. From Chapter 3 you already know what to check: is the other container running, is it on the same network, is the name spelled right. Logs first, always.",
         check: { kind: "manual", label: "I saw the FATAL line" },
       },
       {
         instruction: "Clean it up.",
         command: "docker rm quest-broken",
+        commandParts: [
+          { piece: "docker rm", meaning: "Delete a stopped container" },
+          { piece: "quest-broken", meaning: "Cleanup so the name is free next time" },
+        ],
         saw: "Gone. Stopped containers stick around until removed, which is useful for exactly the investigation you just did, but they do accumulate.",
         check: { kind: "manual", label: "Removed" },
       },
@@ -71,6 +89,10 @@ export const CHAPTER_4: Lesson[] = [
       {
         instruction: "Check how many times the Python service has restarted so far.",
         command: "docker inspect container-quest-ai-1 --format 'restarts: {{.RestartCount}}'",
+        commandParts: [
+          { piece: "docker inspect --format", meaning: "Read one field of container metadata" },
+          { piece: "RestartCount", meaning: "How many times Docker has restarted this container" },
+        ],
         saw: "A number, probably small. This counter is one of the most useful health signals there is. A service with hundreds of restarts is telling you something is badly wrong, even if it looks fine right now.",
         check: { kind: "manual", label: "I noted the number" },
       },
@@ -79,6 +101,10 @@ export const CHAPTER_4: Lesson[] = [
           "Now make it crash on purpose. This asks the service to kill its own process, exactly as a real crash would.",
         command:
           "curl -s -XPOST localhost:8000/chaos -H 'content-type: application/json' -d '{\"action\":\"crash\"}'",
+        commandParts: [
+          { piece: "curl -s -XPOST .../chaos", meaning: "Ask the service to crash itself (teaching endpoint)" },
+          { piece: "-d '{\"action\":\"crash\"}'", meaning: "JSON body selecting the crash action" },
+        ],
         saw: "The service acknowledged, then killed itself. Nothing you did stopped the container: the program inside exited on its own, which is how real crashes happen.",
         check: { kind: "restarted", service: "ai" },
       },
@@ -86,6 +112,10 @@ export const CHAPTER_4: Lesson[] = [
         instruction: "Wait a moment, then check the counter again.",
         command:
           "sleep 6 && docker inspect container-quest-ai-1 --format 'restarts: {{.RestartCount}} status: {{.State.Status}}'",
+        commandParts: [
+          { piece: "sleep 6", meaning: "Wait for restart policy to bring it back" },
+          { piece: "docker inspect ... RestartCount", meaning: "Confirm the counter went up" },
+        ],
         saw: "The count went up by one and the status is running again. Nobody intervened. The restart policy noticed the exit and started it back up, and the service is already serving requests. That's the simplest possible form of self-healing, and Kubernetes is essentially this idea taken much further.",
         check: { kind: "manual", label: "The count went up and it's running" },
       },
@@ -116,6 +146,10 @@ export const CHAPTER_4: Lesson[] = [
           "Make the Go service report itself NOT READY, while leaving the process completely healthy.",
         command:
           "curl -s -XPOST localhost:8080/chaos -H 'content-type: application/json' -d '{\"action\":\"unready\"}'",
+        commandParts: [
+          { piece: "curl -XPOST .../chaos", meaning: "Teaching endpoint again" },
+          { piece: "action: unready", meaning: "Fail readiness while the process stays alive" },
+        ],
         saw: "It accepted. The program is running perfectly and is now declining traffic. On the Dashboard, its card just turned amber rather than red.",
         check: { kind: "unready", service: "util" },
       },
@@ -124,6 +158,11 @@ export const CHAPTER_4: Lesson[] = [
           "Ask both health questions and compare the answers. This is the whole lesson in one command.",
         command:
           "echo \"liveness (am I alive?):    $(curl -s -o /dev/null -w '%{http_code}' localhost:8080/healthz)\"; echo \"readiness (send traffic?): $(curl -s -o /dev/null -w '%{http_code}' localhost:8080/readyz)\"",
+        commandParts: [
+          { piece: "curl .../healthz", meaning: "Liveness: is the process up?" },
+          { piece: "curl .../readyz", meaning: "Readiness: should traffic be sent?" },
+          { piece: "echo both", meaning: "Compare the two status codes side by side" },
+        ],
         saw: "Liveness 200, readiness 503. Two different answers from the same running program at the same instant. A system reading these would keep the container alive and simply route around it. Nothing gets restarted, nothing is lost, and when it recovers traffic returns automatically.",
         check: { kind: "manual", label: "I saw 200 and 503" },
       },
@@ -132,6 +171,10 @@ export const CHAPTER_4: Lesson[] = [
           "Confirm nothing was restarted: compare with the crash you caused in the previous lesson.",
         command:
           "docker inspect container-quest-util-1 --format 'restarts: {{.RestartCount}} uptime-status: {{.State.Status}}'",
+        commandParts: [
+          { piece: "docker inspect util", meaning: "Process still running (restart count)" },
+          { piece: "State.Status", meaning: "Confirm it did not need a full restart for unready" },
+        ],
         saw: "The restart count did not move. That's the entire point: crash kills and restarts, unready merely diverts traffic. Same-looking buttons, completely different mechanisms, and in Chapter 5 you'll configure both of these explicitly.",
         check: { kind: "manual", label: "Restart count unchanged" },
       },
@@ -161,6 +204,10 @@ export const CHAPTER_4: Lesson[] = [
           "Ask Compose for three copies of the worker, which publishes a fixed port.",
         command:
           "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=3 2>&1 | tail -4",
+        commandParts: [
+          { piece: "docker compose ... up -d", meaning: "Apply the compose project" },
+          { piece: "--scale worker=N", meaning: "Run N copies of the worker service" },
+        ],
         saw: "It fails, and the error mentions the port being allocated or already in use. Three containers all tried to claim port 3001 on your machine, and only one can have it. There is no load balancer in Compose to sit in front of them: the concept doesn't exist.",
         check: { kind: "manual", label: "I saw it fail on the port" },
       },
@@ -168,6 +215,10 @@ export const CHAPTER_4: Lesson[] = [
         instruction: "Put things back to a single worker.",
         command:
           "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=1 2>&1 | tail -2",
+        commandParts: [
+          { piece: "docker compose ... up -d", meaning: "Apply the compose project" },
+          { piece: "--scale worker=N", meaning: "Run N copies of the worker service" },
+        ],
         saw: "Back to one. In Chapter 5 you'll scale a service to five copies with a single command and no port conflicts at all, because Kubernetes puts a load balancer in front by default, and that's the difference.",
         check: { kind: "manual", label: "Back to one worker" },
       },

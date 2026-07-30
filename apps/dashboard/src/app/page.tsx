@@ -45,14 +45,15 @@ const ASSUMED = [
 ];
 
 const NOT_ASSUMED = [
-  "Any Docker or Kubernetes knowledge. Chapter 0 defines every term before it is used.",
+  "Any Docker knowledge at all. Chapter 0 starts from why containers exist and has you build one by hand, one line at a time.",
+  "Any Kubernetes knowledge. Every term is defined before it is used.",
   "A systems, ops, or DevOps background of any kind.",
   "Networking theory. The parts that matter are taught where they first bite.",
   "YAML, cloud accounts, or a credit card. Everything runs locally and for free.",
 ];
 
 const TOOLS = [
-  { cmd: "docker", why: "Chapters 1 through 4. Install OrbStack or Docker Desktop." },
+  { cmd: "docker", why: "Chapter 0 onward. Install OrbStack or Docker Desktop." },
   { cmd: "node", why: "Version 22 or newer, to run the dashboard." },
   { cmd: "kubectl", why: "Chapter 5 onward, to talk to the cluster." },
   { cmd: "kind", why: "Chapter 5 onward, to create a local cluster." },
@@ -106,10 +107,10 @@ export default function Landing() {
           </h1>
 
           <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-ink-dim">
-            Most tutorials hand you six unfamiliar words at once and a hello-world container.
-            This one gives you a small production system: eight containers, five languages, all
-            running locally. You learn by taking it apart and watching it put itself back
-            together.
+            Most tutorials stop at a hello-world container. This one starts there, walking you
+            through your first Dockerfile a line at a time, then hands you a small production
+            system: eight containers, five languages, all running locally. You learn by taking
+            it apart and watching it put itself back together.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">

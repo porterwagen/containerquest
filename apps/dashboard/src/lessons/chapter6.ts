@@ -1,7 +1,7 @@
 import type { Lesson } from "./types.ts";
 
 /**
- * Chapter 6 — Ship something of your own.
+ * Chapter 6  -  Ship something of your own.
  *
  * The transfer chapter. Everything so far has been on a system someone else
  * built; here you containerize a program you wrote and put it on the cluster.
@@ -27,27 +27,88 @@ export const CHAPTER_6: Lesson[] = [
     steps: [
       {
         instruction:
-          "Create a small app and its Dockerfile in a scratch folder. This writes both files for you.",
-        command:
-          "mkdir -p ~/quest-myapp && cd ~/quest-myapp && printf 'const http = require(\"http\");\\nconst PORT = process.env.PORT || 4000;\\nhttp.createServer((req, res) => {\\n  res.writeHead(200, {\"content-type\": \"application/json\"});\\n  res.end(JSON.stringify({ app: \"my-first-container\", host: require(\"os\").hostname() }));\\n}).listen(PORT, \"0.0.0.0\", () => console.log(\"listening on \" + PORT));\\n' > server.js && printf 'FROM node:24-alpine\\nWORKDIR /app\\nCOPY server.js .\\nEXPOSE 4000\\nCMD [\"node\", \"server.js\"]\\n' > Dockerfile && ls -la",
+          "Create a small app folder with a server and a Dockerfile. Look at the layout and files below first, then run the command (or create them in an editor).",
+        scaffold: {
+          root: "~/quest-myapp",
+          note: "One folder, two files: a tiny Node server and its Dockerfile.",
+          files: [
+            {
+              path: "server.js",
+              language: "js",
+              content: `const http = require("http");
+const PORT = process.env.PORT || 4000;
+http.createServer((req, res) => {
+  res.writeHead(200, {"content-type": "application/json"});
+  res.end(JSON.stringify({ app: "my-first-container", host: require("os").hostname() }));
+}).listen(PORT, "0.0.0.0", () => console.log("listening on " + PORT));
+`,
+            },
+            {
+              path: "Dockerfile",
+              language: "dockerfile",
+              content: `FROM node:24-alpine
+WORKDIR /app
+COPY server.js .
+EXPOSE 4000
+CMD ["node", "server.js"]
+`,
+            },
+          ],
+        },
+        command: `mkdir -p ~/quest-myapp && cd ~/quest-myapp
+cat > server.js <<'EOF'
+const http = require("http");
+const PORT = process.env.PORT || 4000;
+http.createServer((req, res) => {
+  res.writeHead(200, {"content-type": "application/json"});
+  res.end(JSON.stringify({ app: "my-first-container", host: require("os").hostname() }));
+}).listen(PORT, "0.0.0.0", () => console.log("listening on " + PORT));
+EOF
+cat > Dockerfile <<'EOF'
+FROM node:24-alpine
+WORKDIR /app
+COPY server.js .
+EXPOSE 4000
+CMD ["node", "server.js"]
+EOF
+ls -la`,
+        commandParts: [
+          { piece: "mkdir -p ~/quest-myapp", meaning: "Create a scratch folder for your app" },
+          { piece: "cat > server.js <<'EOF' ... EOF", meaning: "Write the Node server (same content as the panel above)" },
+          { piece: "cat > Dockerfile <<'EOF' ... EOF", meaning: "Write the Dockerfile next to it" },
+          { piece: "ls -la", meaning: "Confirm the two files exist" },
+        ],
         saw: "Two files. server.js is a web server in about eight lines: note the \"0.0.0.0\" in there. The Dockerfile is five lines: pick a base, set a working folder, copy the code in, note the port, say how to start it. That's a complete, valid image definition.",
         check: { kind: "manual", label: "I created both files" },
       },
       {
         instruction: "Build it into an image. The dot at the end means 'build from this folder'.",
         command: "cd ~/quest-myapp && docker build -t myapp:1.0.0 .",
+        commandParts: [
+          { piece: "cd ~/quest-myapp", meaning: "Build context is this folder" },
+          { piece: "docker build -t myapp:1.0.0 .", meaning: "Build and tag your image" },
+        ],
         saw: "It fetched the Node base image if it didn't have it, copied your file in, and produced an image. You now have a portable, self-contained package of your program, the exact same kind of artifact as every image in this project.",
         check: { kind: "manual", label: "The build succeeded" },
       },
       {
         instruction: "Run it, publishing port 4000 so you can reach it.",
         command: "docker run -d --name myapp -p 4000:4000 myapp:1.0.0 && sleep 2 && curl -s localhost:4000",
+        commandParts: [
+          { piece: "docker run -d --name myapp", meaning: "Background container with a stable name" },
+          { piece: "-p 4000:4000", meaning: "Publish port 4000 on your Mac" },
+          { piece: "myapp:1.0.0", meaning: "Image you just built" },
+          { piece: "curl -s localhost:4000", meaning: "Confirm it answers" },
+        ],
         saw: "Your app answered, and told you the container's hostname. You wrote a program, packaged it, and ran it in a container, and this image would behave identically on any machine with Docker, with no setup instructions attached.",
         check: { kind: "manual", label: "My app responded" },
       },
       {
         instruction: "Clean up the running container. The image stays for the next lesson.",
         command: "docker rm -f myapp",
+        commandParts: [
+          { piece: "docker rm -f myapp", meaning: "Force-remove the container (cleanup before K8s)" },
+        ],
         saw: "Stopped and removed. The image is still there: you'll deploy it to Kubernetes next.",
         check: { kind: "manual", label: "Cleaned up" },
       },
@@ -77,6 +138,10 @@ export const CHAPTER_6: Lesson[] = [
       {
         instruction: "Hand your image to the cluster.",
         command: "kind load docker-image myapp:1.0.0 --name container-quest",
+        commandParts: [
+          { piece: "kind load docker-image myapp:1.0.0", meaning: "Copy the local image into the kind cluster" },
+          { piece: "--name container-quest", meaning: "Which kind cluster" },
+        ],
         saw: "The image was copied onto each node. In production this step is `docker push` to a registry instead, and the cluster pulls it, but the effect is the same: the machines that will run your app now have the image.",
         check: { kind: "manual", label: "The image loaded" },
       },
@@ -84,12 +149,21 @@ export const CHAPTER_6: Lesson[] = [
         instruction: "Create a deployment with two copies of your app.",
         command:
           "kubectl create deployment myapp --image=myapp:1.0.0 --replicas=2 -n container-quest && kubectl patch deployment myapp -n container-quest -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myapp\",\"imagePullPolicy\":\"IfNotPresent\"}]}}}}'",
+        commandParts: [
+          { piece: "kubectl create deployment myapp", meaning: "Create a Deployment from the CLI" },
+          { piece: "--image=myapp:1.0.0 --replicas=2", meaning: "Image and two copies" },
+          { piece: "kubectl patch ... imagePullPolicy", meaning: "Never pull: use the image kind already loaded" },
+        ],
         saw: "Created, then patched so it uses the local image instead of trying to download one. Your declaration now exists: two copies of myapp should always be running.",
         check: { kind: "manual", label: "Deployment created" },
       },
       {
         instruction: "Watch your pods start.",
         command: "sleep 10; kubectl get pods -n container-quest -l app=myapp -o wide",
+        commandParts: [
+          { piece: "sleep 10", meaning: "Wait for pods to start" },
+          { piece: "kubectl get pods -l app=myapp -o wide", meaning: "See your app pods" },
+        ],
         saw: "Two pods of YOUR application, scheduled onto the cluster's worker machines. Everything you learned in Chapter 5 now applies to them: delete one and it comes back, scale them with one number, roll out a new version without downtime.",
         check: { kind: "manual", label: "My pods are running" },
       },
@@ -98,6 +172,11 @@ export const CHAPTER_6: Lesson[] = [
           "Give your pods a stable name, then reach your app through a port-forward tunnel and ask it twice who answered.",
         command:
           "kubectl expose deployment myapp -n container-quest --port=4000 --target-port=4000 >/dev/null; kubectl port-forward -n container-quest svc/myapp 4400:4000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s localhost:4400; echo; curl -s localhost:4400; echo; kill $PF 2>/dev/null",
+        commandParts: [
+          { piece: "kubectl expose deployment myapp", meaning: "Create a Service in front of the pods" },
+          { piece: "--port=4000 --target-port=4000", meaning: "Service port mapping" },
+          { piece: "Then port-forward / curl", meaning: "Reach it from your laptop" },
+        ],
         saw: "Two responses, and the SAME hostname both times, even though you have two pods. This surprises people. `port-forward` is a debugging tunnel: it picks one pod and wires you straight to it, bypassing the Service entirely. It is not the path real traffic takes, so it cannot show you load balancing. Worth remembering, because it means port-forward can make a broken pod look fine, or a healthy one look broken, depending on which it picked.",
         check: { kind: "manual", label: "I saw the same hostname twice" },
       },
@@ -106,6 +185,11 @@ export const CHAPTER_6: Lesson[] = [
           "Now ask from INSIDE the cluster, through the Service name: the path real traffic actually takes. This launches a throwaway container, makes eight requests, and deletes itself.",
         command:
           "kubectl run lb-demo --rm -i --restart=Never --image=alpine:3.23 -n container-quest -- sh -c 'for i in 1 2 3 4 5 6 7 8; do wget -qO- myapp:4000; echo; done'",
+        commandParts: [
+          { piece: "kubectl run lb-demo --rm -i", meaning: "One-shot pod, deleted when done" },
+          { piece: "--image=alpine ... wget myapp:4000", meaning: "Hit the Service DNS name from inside the cluster" },
+          { piece: "for i in ...", meaning: "Several requests: hostnames may rotate across pods" },
+        ],
         saw: "Now the hostnames alternate between both of your pods. THAT is the load balancer. The Service took the name `myapp`, resolved it, and spread the requests across every ready pod behind it. Your application is now running redundantly across multiple machines, load balanced, and restarted automatically if anything dies. That is a real deployment.",
         check: { kind: "manual", label: "I saw both pod names" },
       },
@@ -134,6 +218,9 @@ export const CHAPTER_6: Lesson[] = [
           "Clean up the app you deployed, so your cluster is tidy. Your image stays if you want to keep experimenting.",
         command:
           "kubectl delete deployment,service myapp -n container-quest 2>/dev/null; echo 'cleaned up'",
+        commandParts: [
+          { piece: "kubectl delete deployment,service myapp", meaning: "Remove the demo resources" },
+        ],
         saw: "Removed. Note that deleting the deployment removed its pods too: they were owned by it. That ownership is how Kubernetes tracks what belongs to what, and why deleting a namespace cleans up everything inside it.",
         check: { kind: "manual", label: "Cleaned up" },
       },
@@ -141,6 +228,9 @@ export const CHAPTER_6: Lesson[] = [
         instruction:
           "One last look at the cluster you've been working on, still running everything else quite happily.",
         command: "kubectl get all -n container-quest",
+        commandParts: [
+          { piece: "kubectl get all -n container-quest", meaning: "Overview of pods, services, deployments in the namespace" },
+        ],
         saw: "Deployments, pods, services, and replicasets: the objects you now understand. When you started this course, none of these words meant anything.",
         check: { kind: "manual", label: "I looked at the cluster" },
       },

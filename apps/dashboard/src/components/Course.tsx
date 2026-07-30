@@ -8,6 +8,8 @@ import {
   evaluate,
   type Lesson,
   type ProbeMap,
+  type CommandPart,
+  type Scaffold,
   type Step,
 } from "@/lessons";
 import { Replay, getRecording } from "./Replay";
@@ -172,7 +174,7 @@ function Sidebar({
 
       <p className="mt-5 border-t border-edge pt-4 text-[11.5px] leading-relaxed text-ink-faint">
         {mode === "demo"
-          ? "Every command here was really run against a real system \u2014 press run to replay what it printed."
+          ? "Every command here was really run against a real system - press run to replay what it printed."
           : "Keep a terminal open beside this. Every lesson asks you to run something real."}
       </p>
     </aside>
@@ -258,9 +260,7 @@ function LessonView({
 
       <div className="space-y-3.5">
         {lesson.concept.map((p, i) => (
-          <p key={i} className="max-w-[68ch] text-[15px] leading-[1.65] text-ink-dim">
-            {p}
-          </p>
+          <ConceptBlock key={i} text={p} />
         ))}
       </div>
 
@@ -360,23 +360,42 @@ function StepCard({
         <div className="min-w-0 flex-1">
           <p className="text-[14.5px] leading-relaxed text-ink">{step.instruction}</p>
 
+          {/* File-writing steps: show tree + contents first so printf one-liners
+              are not the only way to understand what is being created. */}
+          {step.scaffold && <ScaffoldPanel scaffold={step.scaffold} />}
+
           {/* On the web there is nothing to run against, so the command is
               shown as a replay of the real recorded session. Locally it is a
               command you copy and actually execute. */}
           {step.command && isDemo && recording ? (
-            <Replay lessonId={lessonId} stepIndex={stepIndex} onPlayed={onManual} />
+            <div className="mt-2.5">
+              <Replay lessonId={lessonId} stepIndex={stepIndex} onPlayed={onManual} />
+              {step.commandParts && step.commandParts.length > 0 && (
+                <CommandPartsPanel parts={step.commandParts} />
+              )}
+            </div>
           ) : (
             step.command && (
-              <div className="mt-2.5 flex items-stretch gap-2">
-                <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre rounded-md border border-edge bg-void px-3 py-2.5 font-mono text-[12.5px] text-beam">
-                  {step.command}
-                </code>
-                <button
-                  onClick={copy}
-                  className="shrink-0 rounded-md border border-edge px-2.5 font-mono text-[11px] text-ink-faint transition-colors hover:border-edge-bright hover:text-ink"
-                >
-                  {copied ? "copied" : "copy"}
-                </button>
+              <div className="mt-2.5">
+                {step.scaffold && (
+                  <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+                    Terminal (optional if you create the files another way)
+                  </p>
+                )}
+                <div className="flex items-stretch gap-2">
+                  <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre rounded-md border border-edge bg-void px-3 py-2.5 font-mono text-[12.5px] leading-relaxed text-beam">
+                    {step.command}
+                  </code>
+                  <button
+                    onClick={copy}
+                    className="shrink-0 rounded-md border border-edge px-2.5 font-mono text-[11px] text-ink-faint transition-colors hover:border-edge-bright hover:text-ink"
+                  >
+                    {copied ? "copied" : "copy"}
+                  </button>
+                </div>
+                {step.commandParts && step.commandParts.length > 0 && (
+                  <CommandPartsPanel parts={step.commandParts} />
+                )}
               </div>
             )
           )}
@@ -392,7 +411,7 @@ function StepCard({
 
           {!passed && !isDemo && step.check.kind !== "manual" && (
             <p className="mt-2.5 font-mono text-[11.5px] text-ink-faint">
-              waiting \u2014 this checks itself when you run it
+              waiting - this checks itself when you run it
             </p>
           )}
 
@@ -414,4 +433,121 @@ function StepCard({
       </div>
     </section>
   );
+}
+
+/**
+ * Concept strings sometimes encode lists with "• " or "1. " and newlines.
+ * Render those as real lists so they don't collapse into one paragraph.
+ */
+function ConceptBlock({ text }: { text: string }) {
+  const trimmed = text.trim();
+  const bulletSplit = trimmed.split(/\n•\s*/);
+  if (trimmed.startsWith("• ") || trimmed.startsWith("•\t") || bulletSplit.length > 1) {
+    const items = trimmed.startsWith("•")
+      ? trimmed
+          .split(/\n•\s*/)
+          .map((s) => s.replace(/^•\s*/, "").trim())
+          .filter(Boolean)
+      : bulletSplit.map((s) => s.replace(/^•\s*/, "").trim()).filter(Boolean);
+    return (
+      <ul className="max-w-[68ch] list-disc space-y-2 pl-5 text-[15px] leading-[1.65] text-ink-dim marker:text-ink-faint">
+        {items.map((item) => (
+          <li key={item.slice(0, 48)} className="pl-1">
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  const numbered = trimmed.match(/^\d+\.\s/);
+  if (numbered && /\n\d+\.\s/.test(trimmed)) {
+    const items = trimmed
+      .split(/\n(?=\d+\.\s)/)
+      .map((s) => s.replace(/^\d+\.\s*/, "").trim())
+      .filter(Boolean);
+    return (
+      <ol className="max-w-[68ch] list-decimal space-y-2 pl-5 text-[15px] leading-[1.65] text-ink-dim marker:text-ink-faint">
+        {items.map((item, i) => (
+          <li key={`${i}-${item.slice(0, 40)}`} className="pl-1">
+            {item}
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
+  return (
+    <p className="max-w-[68ch] text-[15px] leading-[1.65] text-ink-dim">{text}</p>
+  );
+}
+
+/** Token-by-token decode of a command (first time a flag appears). */
+function CommandPartsPanel({ parts }: { parts: CommandPart[] }) {
+  return (
+    <div className="mt-2 overflow-hidden rounded-md border border-edge">
+      <ul className="m-0 list-none divide-y divide-edge p-0">
+        {parts.map((part) => (
+          <li
+            key={part.piece}
+            className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-[minmax(0,auto)_1fr] sm:gap-4 sm:items-baseline"
+          >
+            <code className="font-mono text-[12px] text-beam whitespace-pre-wrap break-all">
+              {part.piece}
+            </code>
+            <span className="text-[12.5px] leading-snug text-ink-dim">{part.meaning}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Companion panel for file-writing steps: directory tree + each file's contents.
+ * Keeps the learning surface readable even when the terminal command is dense.
+ */
+function ScaffoldPanel({ scaffold }: { scaffold: Scaffold }) {
+  return (
+    <div className="mt-3 space-y-2.5 rounded-lg border border-edge bg-void/60 p-3">
+      <pre className="m-0 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-dim">
+        {scaffoldTree(scaffold)}
+      </pre>
+
+      {scaffold.note && (
+        <p className="m-0 text-[12.5px] leading-relaxed text-ink-faint">{scaffold.note}</p>
+      )}
+
+      {scaffold.files.map((file) => (
+        <div key={file.path} className="overflow-hidden rounded-md border border-edge">
+          <div className="flex items-center justify-between gap-2 border-b border-edge bg-panel px-3 py-1.5">
+            <span className="font-mono text-[11.5px] text-beam">
+              {scaffold.root.replace(/\/$/, "")}/{file.path}
+            </span>
+            {file.language && (
+              <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                {file.language}
+              </span>
+            )}
+          </div>
+          <pre className="m-0 max-h-64 overflow-auto whitespace-pre bg-void px-3 py-2.5 font-mono text-[12px] leading-relaxed text-ink-dim">
+            {file.content.replace(/\n$/, "")}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Simple tree from a flat file list under one root. */
+function scaffoldTree(scaffold: Scaffold): string {
+  const root = scaffold.root.replace(/\/$/, "");
+  const lines = [`${root}/`];
+  const paths = scaffold.files.map((f) => f.path).sort();
+  paths.forEach((path, i) => {
+    const last = i === paths.length - 1;
+    const branch = last ? "└── " : "├── ";
+    lines.push(`${branch}${path}`);
+  });
+  return lines.join("\n");
 }

@@ -4,13 +4,13 @@ A hands-on course that teaches Docker and Kubernetes by running a real
 eight-container system on your machine, then breaking it on purpose and
 watching it recover.
 
-Most tutorials hand you six unfamiliar words at once and a hello-world
-container. This one gives you a miniature production platform: eight services
-written in five languages, wired together with Compose and deployed to a real
-local Kubernetes cluster. Every lesson is a command you actually run, verified
-against services that actually change.
+Most tutorials stop at a hello-world container. This one starts there, walking
+you through your first Dockerfile a line at a time, then hands you a miniature
+production platform: eight services written in five languages, wired together
+with Compose and deployed to a real local Kubernetes cluster. Every lesson is a
+command you actually run, verified against services that actually change.
 
-**28 lessons. 7 chapters. 8 containers. 5 languages.**
+**32 lessons. 7 chapters. 8 containers. 5 languages.**
 
 Repository: <https://github.com/porterwagen/containerquest>
 
@@ -53,7 +53,7 @@ every service as offline, because nothing is running for it to read.
 
 | Tool | Needed for | Notes |
 | --- | --- | --- |
-| `docker` | Chapters 1 to 4 | [OrbStack](https://orbstack.dev) or Docker Desktop. macOS and Linux have no Docker daemon of their own, so one of these supplies it. |
+| `docker` | Chapter 0 onward | [OrbStack](https://orbstack.dev) or Docker Desktop. macOS and Linux have no Docker daemon of their own, so one of these supplies it. |
 | `node` | Running the dashboard | Version 22 or newer. |
 | `kubectl` | Chapter 5 onward | The Kubernetes client. |
 | `kind` | Chapter 5 onward | Runs a cluster as containers, no cloud account required. |
@@ -68,9 +68,11 @@ every service as offline, because nothing is running for it to read.
 program and a network port are, and you can read a little code without needing
 to write C, Go, or Python.
 
-**Not assumed:** any Docker or Kubernetes knowledge at all. Chapter 0 defines
-every term before it is used. No systems or DevOps background, no networking
-theory, no YAML, no cloud account, no credit card.
+**Not assumed:** any Docker or Kubernetes knowledge at all. Chapter 0 starts
+from why containers exist, has you run one, then walks through building your
+own Dockerfile a line at a time. Every term is defined before it is used. No
+systems or DevOps background, no networking theory, no YAML, no cloud account,
+no credit card.
 
 ---
 
@@ -101,7 +103,7 @@ to any codebase.
 
 | Chapter | Title | Lessons |
 | --- | --- | --- |
-| 00 | Getting oriented | 3 |
+| 00 | Getting started | 7 |
 | 01 | What a container actually is | 4 |
 | 02 | Images and how they're built | 4 |
 | 03 | Networking, config, and data | 4 |

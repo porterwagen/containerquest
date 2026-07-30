@@ -1,7 +1,7 @@
 import type { Lesson } from "./types.ts";
 
 /**
- * Chapter 2 — Images: what's inside, and why size matters.
+ * Chapter 2  -  Images: what's inside, and why size matters.
  *
  * The most practically useful chapter in the course. Build times and image
  * sizes are the two things developers feel every single day, and both come
@@ -27,6 +27,12 @@ export const CHAPTER_2: Lesson[] = [
         instruction:
           "Look at the layers of the Go service's image. Each row is one build instruction.",
         command: "docker history quest/util:dev --format 'table {{.Size}}\\t{{.CreatedBy}}' | head -12",
+        commandParts: [
+          { piece: "docker history", meaning: "Show the layers that make up an image" },
+          { piece: "quest/util:dev", meaning: "Which image" },
+          { piece: "--format 'table ...'", meaning: "Size and how each layer was created" },
+          { piece: "| head -12", meaning: "Only the first dozen lines" },
+        ],
         saw: "A handful of layers, most of them 0 B. The 0 B ones are metadata: setting a port or a startup command changes no files, so there's nothing to store. Only the layers that actually add files have a size.",
         check: { kind: "manual", label: "I saw the layer list" },
       },
@@ -34,6 +40,11 @@ export const CHAPTER_2: Lesson[] = [
         instruction: "Now compare total sizes across all five services.",
         command:
           "docker images --filter reference='quest/*' --format 'table {{.Repository}}\\t{{.Size}}'",
+        commandParts: [
+          { piece: "docker images", meaning: "List images on disk" },
+          { piece: "--filter reference='quest/*'", meaning: "Only this project's images" },
+          { piece: "--format 'table ...'", meaning: "Repository and size columns" },
+        ],
         saw: "From about 187 kB to over 300 MB, a spread of more than 1,500x. All five do essentially the same job: listen on a port and answer HTTP requests. The next lesson is entirely about where that difference comes from, and it is the single most useful thing in this chapter.",
         check: { kind: "manual", label: "I compared the sizes" },
       },
@@ -62,6 +73,10 @@ export const CHAPTER_2: Lesson[] = [
           "Confirm the C service really is that small, and see how much bigger its build tools were.",
         command:
           "docker images --format 'table {{.Repository}}:{{.Tag}}\\t{{.Size}}' | grep -E 'quest/compute|alpine|REPO'",
+        commandParts: [
+          { piece: "docker images --format ...", meaning: "List name:tag and size" },
+          { piece: "| grep -E 'quest/compute|alpine'", meaning: "Compare the tiny C image to Alpine" },
+        ],
         saw: "The finished image next to the Alpine base its build stage used. The build environment is well over a hundred times larger than the result. All of it was thrown away.",
         check: { kind: "manual", label: "I compared build vs final size" },
       },
@@ -69,12 +84,21 @@ export const CHAPTER_2: Lesson[] = [
         instruction:
           "Prove there's genuinely no operating system in the C service's image. This tries to open a shell inside it.",
         command: "docker exec container-quest-compute-1 sh",
+        commandParts: [
+          { piece: "docker exec", meaning: "Run a command in a running container" },
+          { piece: "container-quest-compute-1", meaning: "The C service container" },
+          { piece: "sh", meaning: "Try to open a shell (this image has none - that is the point)" },
+        ],
         saw: "It failed: there is no `sh` to run. That error IS the correct result. There is no shell in that image because there's no operating system at all. Practically: you can't debug it by going inside, and an attacker can't either. That's the trade.",
         check: { kind: "manual", label: "I saw it fail to find a shell" },
       },
       {
         instruction: "Compare with the Python service, which does have a full OS inside it.",
         command: "docker exec container-quest-ai-1 sh -c 'cat /etc/os-release | head -2'",
+        commandParts: [
+          { piece: "docker exec ... sh -c", meaning: "Run a shell one-liner inside the AI container" },
+          { piece: "cat /etc/os-release | head -2", meaning: "Show which Linux the container thinks it is" },
+        ],
         saw: "Debian. The Python image carries a real Linux distribution because the Python interpreter needs it. Two containers on the same machine, one with an entire OS inside and one with literally nothing; Docker runs both identically.",
         check: { kind: "manual", label: "I saw the Debian version" },
       },
@@ -107,6 +131,12 @@ export const CHAPTER_2: Lesson[] = [
           "Rebuild the Go service with nothing changed. Everything should come from cache.",
         command:
           "cd ~/Documents/containerquest && time docker build -q -t quest/util:dev services/util",
+        commandParts: [
+          { piece: "cd ~/Documents/containerquest", meaning: "Work from the project root" },
+          { piece: "time", meaning: "Print how long the build took" },
+          { piece: "docker build -q -t quest/util:dev", meaning: "Rebuild util quietly and retag" },
+          { piece: "services/util", meaning: "Build context for that service" },
+        ],
         saw: "Under a second or so, and the time is mostly Docker starting up. Nothing changed, so nothing was rebuilt: every layer was reused.",
         check: { kind: "manual", label: "It finished almost instantly" },
       },
@@ -115,6 +145,10 @@ export const CHAPTER_2: Lesson[] = [
           "Now change one line of source code (just a comment) and rebuild. This edits the file, rebuilds, then puts it back exactly as it was.",
         command:
           "cd ~/Documents/containerquest && echo '// cache test' >> services/util/main.go && time docker build -q -t quest/util:dev services/util && git checkout services/util/main.go",
+        commandParts: [
+          { piece: "echo '// cache test' >> services/util/main.go", meaning: "Tiny source change (then you undo it later)" },
+          { piece: "time docker build ...", meaning: "Rebuild: only changed layers should redo" },
+        ],
         saw: "Noticeably slower: several seconds. Changing the source invalidated the layer that copies source in, so the compile had to run again. But notice what did NOT happen: it didn't re-download the Go dependencies, because that layer sits earlier in the file and its inputs were untouched. That's the ordering rule paying off.",
         check: { kind: "manual", label: "The second build took longer" },
       },
@@ -142,6 +176,10 @@ export const CHAPTER_2: Lesson[] = [
         instruction:
           "Pull a real image from Docker Hub. This is a tiny official Linux image, about 8 MB.",
         command: "docker pull alpine:3.23",
+        commandParts: [
+          { piece: "docker pull", meaning: "Download an image from a registry (Docker Hub)" },
+          { piece: "alpine:3.23", meaning: "Image name:tag to fetch" },
+        ],
         saw: "Watch it fetch layers. If any layer is one your machine already has from another image, it's skipped instantly: that's layer sharing from the first lesson doing real work.",
         check: { kind: "manual", label: "It downloaded" },
       },
@@ -149,6 +187,11 @@ export const CHAPTER_2: Lesson[] = [
         instruction:
           "Run it and print its version. This image is a complete Linux system, and it's smaller than most photos.",
         command: "docker run --rm alpine:3.23 cat /etc/alpine-release",
+        commandParts: [
+          { piece: "docker run --rm", meaning: "Throwaway container" },
+          { piece: "alpine:3.23", meaning: "Image you just pulled" },
+          { piece: "cat /etc/alpine-release", meaning: "Command inside: print Alpine version" },
+        ],
         saw: "A version number, printed by a Linux system that started, ran one command, and vanished, in well under a second. That speed is the entire practical argument for containers.",
         check: { kind: "manual", label: "I saw the version" },
       },

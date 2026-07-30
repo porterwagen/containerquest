@@ -1,7 +1,7 @@
 import type { Lesson } from "./types.ts";
 
 /**
- * Chapter 5 — Kubernetes.
+ * Chapter 5  -  Kubernetes.
  *
  * A real three-node cluster is already running locally, with this project's
  * services deployed to it. Every command here was run against that cluster
@@ -30,24 +30,40 @@ export const CHAPTER_5: Lesson[] = [
           "First make sure the cluster has this project's services on it. Safe to run even if they are already there: it just confirms the desired state.",
         command:
           "cd ~/Documents/containerquest && kubectl apply -k infra/k8s/base",
+        commandParts: [
+          { piece: "cd ~/Documents/containerquest", meaning: "Project root" },
+          { piece: "kubectl apply -k infra/k8s/base", meaning: "Apply the Kustomize base (deploy the fleet to the cluster)" },
+        ],
         saw: "Either \"created\" or \"unchanged\" next to each item. Note that running it twice is harmless: you described what should exist, and Kubernetes compared that against reality. That is the declarative idea in its simplest form.",
         check: { kind: "manual", label: "Applied without errors" },
       },
       {
         instruction: "See the machines in your cluster.",
         command: "kubectl get nodes",
+        commandParts: [
+          { piece: "kubectl get nodes", meaning: "List machines (nodes) in the cluster" },
+        ],
         saw: "Three nodes: one control plane and two workers. The control plane is the brain running the comparison loop: it decides what should happen. The workers actually run your containers. In a real cluster these would be separate physical or cloud machines.",
         check: { kind: "manual", label: "I saw three nodes" },
       },
       {
         instruction: "Now see what's running, and importantly, where.",
         command: "kubectl get pods -n container-quest -o wide",
+        commandParts: [
+          { piece: "kubectl get pods", meaning: "List pods in a namespace" },
+          { piece: "-n container-quest", meaning: "This project's namespace" },
+          { piece: "-o wide", meaning: "Also show which node each pod runs on" },
+        ],
         saw: "Five pods spread across the two worker nodes. Nobody chose that placement: you declared how many copies you wanted, and the scheduler decided where they'd fit. Note the pod names: a deployment name, then two random-looking parts. Pods are disposable and never reuse a name.",
         check: { kind: "manual", label: "I saw pods on different nodes" },
       },
       {
         instruction: "Look at a deployment: the declaration itself.",
         command: "kubectl get deployments -n container-quest",
+        commandParts: [
+          { piece: "kubectl get deployments", meaning: "List Deployments (desired replica counts and images)" },
+          { piece: "-n container-quest", meaning: "Namespace" },
+        ],
         saw: "READY shows actual versus desired. Those two numbers matching is Kubernetes' entire job. When they don't match, something somewhere is working to fix it.",
         check: { kind: "manual", label: "I saw the deployments" },
       },
@@ -75,6 +91,11 @@ export const CHAPTER_5: Lesson[] = [
           "Ask the C service in the CLUSTER about itself. This opens a tunnel to it, asks, and closes the tunnel.",
         command:
           "kubectl port-forward -n container-quest svc/compute 9900:9000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s localhost:9900/meta; echo; kill $PF 2>/dev/null",
+        commandParts: [
+          { piece: "kubectl port-forward ... svc/compute 9900:9000", meaning: "Tunnel local 9900 to the compute Service" },
+          { piece: "curl ... /meta", meaning: "Hit the service through the tunnel" },
+          { piece: "kill $PF", meaning: "Stop the background port-forward" },
+        ],
         saw: "podName and nodeName now have real values: something like compute-f78b5cb74-7kgxk on container-quest-worker. Compare with the same service under Docker, where both were null. Same image, same code, more context.",
         check: { kind: "manual", label: "I saw a pod name and node name" },
       },
@@ -83,6 +104,10 @@ export const CHAPTER_5: Lesson[] = [
           "That command used port-forward, which is the everyday way to reach something inside a cluster from your laptop. Here it is again against a different service.",
         command:
           "kubectl port-forward -n container-quest svc/ai 9901:8000 >/dev/null 2>&1 & PF=$!; sleep 4; curl -s -o /dev/null -w 'status %{http_code}\\n' localhost:9901/healthz; kill $PF 2>/dev/null",
+        commandParts: [
+          { piece: "kubectl port-forward ... svc/ai 9901:8000", meaning: "Tunnel local 9901 to the AI Service" },
+          { piece: "curl ... /healthz", meaning: "Check health through the tunnel" },
+        ],
         saw: "status 200. Cluster networks are private by default: nothing inside is reachable from outside unless deliberately exposed. port-forward punches a temporary hole for you, and it's the single command you'll use most while debugging a real cluster.",
         check: { kind: "manual", label: "I saw status 200" },
       },
@@ -108,6 +133,10 @@ export const CHAPTER_5: Lesson[] = [
       {
         instruction: "Note the current pods and their names.",
         command: "kubectl get pods -n container-quest -l app=compute",
+        commandParts: [
+          { piece: "kubectl get pods -l app=compute", meaning: "Only pods labeled as compute" },
+          { piece: "-n container-quest", meaning: "Namespace" },
+        ],
         saw: "Two pods with random-suffixed names. Remember roughly what they look like.",
         check: { kind: "manual", label: "I noted the names" },
       },
@@ -116,12 +145,20 @@ export const CHAPTER_5: Lesson[] = [
           "Delete one. This destroys it outright: no warning to the program, nothing graceful.",
         command:
           "kubectl delete pod -n container-quest $(kubectl get pods -n container-quest -l app=compute -o jsonpath='{.items[0].metadata.name}')",
+        commandParts: [
+          { piece: "kubectl delete pod ...", meaning: "Kill one compute pod on purpose" },
+          { piece: "$(kubectl get pods ... jsonpath=...)", meaning: "Pick a current pod name dynamically" },
+        ],
         saw: "Deleted. For a moment your system is running at half capacity.",
         check: { kind: "manual", label: "I deleted a pod" },
       },
       {
         instruction: "Now look immediately, within a couple of seconds.",
         command: "kubectl get pods -n container-quest -l app=compute",
+        commandParts: [
+          { piece: "kubectl get pods -l app=compute", meaning: "Only pods labeled as compute" },
+          { piece: "-n container-quest", meaning: "Namespace" },
+        ],
         saw: "Two pods again. One has a name you have not seen before, and its age is a few seconds. Nobody told Kubernetes to do that. You declared two, reality became one, and the loop closed the gap on its own. Notice the deleted pod did not return: a NEW pod was created. Pods are replaced, never revived.",
         check: { kind: "manual", label: "A new pod appeared on its own" },
       },
@@ -147,6 +184,10 @@ export const CHAPTER_5: Lesson[] = [
       {
         instruction: "Scale from two copies to five, with one command.",
         command: "kubectl scale deployment compute -n container-quest --replicas=5",
+        commandParts: [
+          { piece: "kubectl scale deployment compute", meaning: "Change desired replica count" },
+          { piece: "--replicas=5", meaning: "Ask for five copies" },
+        ],
         saw: "\"scaled\". That's the whole operation: no ports, no load balancer configuration, no restarts of anything already running.",
         check: { kind: "manual", label: "I scaled it" },
       },
@@ -154,6 +195,11 @@ export const CHAPTER_5: Lesson[] = [
         instruction: "Watch them appear, and note which machines they landed on.",
         command:
           "sleep 8; kubectl get pods -n container-quest -l app=compute -o wide --no-headers | awk '{print $1, $3, $7}'",
+        commandParts: [
+          { piece: "sleep 8", meaning: "Wait for new pods to schedule" },
+          { piece: "kubectl get pods -l app=compute -o wide", meaning: "See names and nodes" },
+          { piece: "awk ...", meaning: "Print a compact name + node list" },
+        ],
         saw: "Five pods, spread across both worker nodes. The scheduler placed them based on available resources: you never specified where. Compare with Compose, where three copies couldn't even start.",
         check: { kind: "manual", label: "I saw five pods across nodes" },
       },
@@ -161,12 +207,18 @@ export const CHAPTER_5: Lesson[] = [
         instruction:
           "Confirm the service is now load-balancing across all of them. This lists the pod addresses it's routing to.",
         command: "kubectl get endpoints compute -n container-quest",
+        commandParts: [
+          { piece: "kubectl get endpoints compute", meaning: "Which pod IPs currently back the compute Service" },
+        ],
         saw: "Five addresses behind one service name. Anything in the cluster that talks to `compute` gets spread across all five, automatically, with no configuration. Those five joined the pool the moment their readiness probes passed.",
         check: { kind: "manual", label: "I saw five endpoints" },
       },
       {
         instruction: "Scale back down to two.",
         command: "kubectl scale deployment compute -n container-quest --replicas=2",
+        commandParts: [
+          { piece: "kubectl scale ... --replicas=2", meaning: "Scale back down to two" },
+        ],
         saw: "Three pods are terminated and removed from the load balancer first, so no request is ever sent to a pod that's shutting down. Scaling down is as safe as scaling up.",
         check: { kind: "manual", label: "Scaled back to two" },
       },
@@ -196,6 +248,10 @@ export const CHAPTER_5: Lesson[] = [
           "Trigger an update by changing the version the pods report. This changes the declaration, so every pod must be replaced.",
         command:
           "kubectl set env deployment/compute -n container-quest SERVICE_VERSION=2.0.0",
+        commandParts: [
+          { piece: "kubectl set env deployment/compute", meaning: "Change env on the pod template" },
+          { piece: "SERVICE_VERSION=2.0.0", meaning: "Triggers a rolling update to a new 'version'" },
+        ],
         saw: "\"updated\". The declaration changed, so the current pods no longer match it, and the replacement process starts immediately.",
         check: { kind: "manual", label: "I triggered the update" },
       },
@@ -203,12 +259,20 @@ export const CHAPTER_5: Lesson[] = [
         instruction: "Watch the replacement happen. This samples the pod states a few times.",
         command:
           "for i in 1 2 3 4 5; do echo \"$(date +%H:%M:%S)  $(kubectl get pods -n container-quest -l app=compute --no-headers | awk '{print $3}' | sort | uniq -c | tr '\\n' ' ')\"; sleep 3; done",
+        commandParts: [
+          { piece: "for i in 1..5", meaning: "Poll a few times while the rollout runs" },
+          { piece: "kubectl get pods ...", meaning: "Watch old pods terminate and new ones start" },
+        ],
         saw: "A mix of Running and Terminating, and briefly MORE pods than you asked for: that's maxSurge in action. New ones came up before old ones went down. At no point did the number of working pods drop below your target.",
         check: { kind: "manual", label: "I watched the pods cycle" },
       },
       {
         instruction: "Confirm the rollout finished cleanly.",
         command: "kubectl rollout status deployment/compute -n container-quest --timeout=90s",
+        commandParts: [
+          { piece: "kubectl rollout status deployment/compute", meaning: "Block until the rollout finishes (or times out)" },
+          { piece: "--timeout=90s", meaning: "Fail clearly if it takes too long" },
+        ],
         saw: "\"successfully rolled out\". Every pod now runs the new configuration, and no request failed at any point during the process.",
         check: { kind: "manual", label: "I saw successfully rolled out" },
       },
@@ -216,6 +280,9 @@ export const CHAPTER_5: Lesson[] = [
         instruction:
           "One more thing worth knowing: Kubernetes keeps the previous version, so undoing a bad deploy is one command.",
         command: "kubectl rollout undo deployment/compute -n container-quest",
+        commandParts: [
+          { piece: "kubectl rollout undo deployment/compute", meaning: "Roll back to the previous ReplicaSet" },
+        ],
         saw: "\"rolled back\". Same gradual, no-downtime process in reverse. This is the command you want to have practiced before the day you actually need it at 2am.",
         check: { kind: "manual", label: "I rolled it back" },
       },
@@ -242,6 +309,10 @@ export const CHAPTER_5: Lesson[] = [
         instruction: "Look at the probes configured on a running pod.",
         command:
           "kubectl get deployment compute -n container-quest -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}{\"\\n\"}{.spec.template.spec.containers[0].readinessProbe}{\"\\n\"}'",
+        commandParts: [
+          { piece: "kubectl get deployment ... -o jsonpath=", meaning: "Extract probe config from the live Deployment" },
+          { piece: "livenessProbe / readinessProbe", meaning: "How Kubernetes checks the container" },
+        ],
         saw: "Two probes, hitting two different paths on different schedules. Note they point at /healthz and /readyz, different endpoints, because they answer different questions.",
         check: { kind: "manual", label: "I saw both probes" },
       },
@@ -250,6 +321,10 @@ export const CHAPTER_5: Lesson[] = [
           "Check the events Kubernetes has recorded for this namespace. This is where probe failures and scheduling decisions show up.",
         command:
           "kubectl get events -n container-quest --sort-by=.lastTimestamp 2>/dev/null | tail -12",
+        commandParts: [
+          { piece: "kubectl get events", meaning: "Cluster event log for the namespace" },
+          { piece: "--sort-by=.lastTimestamp | tail -12", meaning: "Most recent dozen events" },
+        ],
         saw: "A log of what the cluster has actually done: pods scheduled, images pulled, containers started, and any probe failures. This is the first place to look when a deployment isn't behaving, and it's much more informative than staring at pod status.",
         check: { kind: "manual", label: "I saw the event log" },
       },
@@ -258,6 +333,10 @@ export const CHAPTER_5: Lesson[] = [
           "Look at the full story for one pod, including its probe configuration and recent events.",
         command:
           "kubectl describe pod -n container-quest $(kubectl get pods -n container-quest -l app=compute -o jsonpath='{.items[0].metadata.name}') | tail -25",
+        commandParts: [
+          { piece: "kubectl describe pod ...", meaning: "Full pod config + recent events (first stop when debugging)" },
+          { piece: "$(kubectl get pods ...)", meaning: "Pick one compute pod by label" },
+        ],
         saw: "`describe` is the workhorse command for debugging Kubernetes. It shows the pod's configuration, its current state, and the events affecting it, all in one place. When something is wrong and you don't know why, this is the command.",
         check: { kind: "manual", label: "I saw the pod description" },
       },

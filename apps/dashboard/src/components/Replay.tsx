@@ -125,7 +125,7 @@ export function Replay({
           <div className="mt-2 flex items-center gap-2 border-t border-edge pt-2 font-mono text-[10px] text-ink-faint">
             <span>took {rec.ms}ms</span>
             {rec.exitCode !== 0 && (
-              <span className="text-warn">exit {rec.exitCode} — expected here</span>
+              <span className="text-warn">exit {rec.exitCode}, expected here</span>
             )}
           </div>
         )}

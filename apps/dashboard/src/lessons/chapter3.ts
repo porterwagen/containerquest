@@ -1,7 +1,7 @@
 import type { Lesson } from "./types.ts";
 
 /**
- * Chapter 3 — How containers talk, and where data lives.
+ * Chapter 3  -  How containers talk, and where data lives.
  *
  * Networking and storage are where most real-world container confusion
  * happens, because both behave differently inside a container than the
@@ -27,6 +27,10 @@ export const CHAPTER_3: Lesson[] = [
       {
         instruction: "See which ports are published, and to where.",
         command: "docker ps --format 'table {{.Names}}\\t{{.Ports}}'",
+        commandParts: [
+          { piece: "docker ps", meaning: "List running containers" },
+          { piece: "--format 'table ... Ports'", meaning: "Show published ports (host -> container)" },
+        ],
         saw: "Entries like 0.0.0.0:8000->8000/tcp. Read that as: connections to port 8000 on your machine get forwarded to port 8000 inside that container. Containers with nothing in this column have no published ports; they're reachable by other containers, but not by you.",
         check: { kind: "manual", label: "I saw the port mappings" },
       },
@@ -34,6 +38,12 @@ export const CHAPTER_3: Lesson[] = [
         instruction:
           "Reach the Python service through its published port, the normal way.",
         command: "curl -s -o /dev/null -w 'status %{http_code}\\n' localhost:8000/healthz",
+        commandParts: [
+          { piece: "curl -s", meaning: "HTTP request, silent" },
+          { piece: "-o /dev/null", meaning: "Discard body" },
+          { piece: "-w 'status %{http_code}'", meaning: "Print only the HTTP status code" },
+          { piece: "localhost:8000/healthz", meaning: "AI liveness endpoint on the host" },
+        ],
         saw: "status 200. That request went from your Mac, through the published port, into the container's private network.",
         check: { kind: "requests", service: "ai", delta: 1 },
       },
@@ -42,6 +52,10 @@ export const CHAPTER_3: Lesson[] = [
           "Now try a port that exists inside a container but was never published. This should fail: that's the point.",
         command:
           "curl -s --max-time 4 localhost:5555/healthz >/dev/null 2>&1 && echo 'reachable' || echo 'refused: nothing is published on 5555'",
+        commandParts: [
+          { piece: "curl ... localhost:5555", meaning: "Port that nothing is listening on" },
+          { piece: "|| echo 'refused: ...'", meaning: "Show failure clearly when nothing answers" },
+        ],
         saw: "Refused. Nothing is listening there, because publishing is opt-in. A port inside a container is invisible from outside until you deliberately connect it.",
         check: { kind: "manual", label: "I saw it refuse" },
       },
@@ -69,6 +83,10 @@ export const CHAPTER_3: Lesson[] = [
         instruction:
           "From inside the worker container, look up the address of a service by name.",
         command: "docker exec container-quest-worker-1 getent hosts redis",
+        commandParts: [
+          { piece: "docker exec ... worker", meaning: "Run inside the worker container" },
+          { piece: "getent hosts redis", meaning: "DNS lookup for service name `redis` on the compose network" },
+        ],
         saw: "An IP address and the name `redis`. The worker never knew that number and never will: it asks for the name every time, and Docker's DNS answers with wherever redis currently is.",
         check: { kind: "manual", label: "I saw an IP and the name" },
       },
@@ -76,12 +94,20 @@ export const CHAPTER_3: Lesson[] = [
         instruction:
           "Now actually talk to the Python service from inside the Go service's network, using only the name.",
         command: "docker exec container-quest-worker-1 wget -qO- http://ai:8000/healthz",
+        commandParts: [
+          { piece: "docker exec ... worker", meaning: "Still inside the worker's network view" },
+          { piece: "wget -qO- http://ai:8000/healthz", meaning: "Call the AI service by Compose DNS name, not localhost" },
+        ],
         saw: "A healthy response. Note the URL: `http://ai:8000`. No IP address, no configuration file, no service registry to set up. Two containers, one name, and it just works, as long as they share a network.",
         check: { kind: "requests", service: "ai", delta: 1 },
       },
       {
         instruction: "See the network they're both attached to.",
         command: "docker network ls --filter name=container-quest",
+        commandParts: [
+          { piece: "docker network ls", meaning: "List Docker networks" },
+          { piece: "--filter name=container-quest", meaning: "Only this project's network" },
+        ],
         saw: "One network, created automatically for this project. Everything in the Compose file joined it, which is why they can all reach each other by name without a single line of network configuration.",
         check: { kind: "manual", label: "I saw the network" },
       },
@@ -109,6 +135,11 @@ export const CHAPTER_3: Lesson[] = [
         instruction: "See the settings the worker was started with.",
         command:
           "docker inspect container-quest-worker-1 --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E 'REDIS|DATABASE|AI_URL|VERSION'",
+        commandParts: [
+          { piece: "docker inspect ... --format", meaning: "Pull fields from container metadata" },
+          { piece: "{{range .Config.Env}}", meaning: "List environment variables inside the container" },
+          { piece: "| grep SERVICE", meaning: "Show only the teaching-related env vars" },
+        ],
         saw: "Addresses and a version, supplied when the container started; none of it compiled into the image. Swap these values and the same image talks to a completely different database, with no rebuild.",
         check: { kind: "manual", label: "I saw the environment variables" },
       },
@@ -117,6 +148,11 @@ export const CHAPTER_3: Lesson[] = [
           "Run the Python image with a different version setting, and watch it report the new value. Same image, different behavior.",
         command:
           "docker run --rm -e SERVICE_VERSION=9.9.9 --entrypoint sh quest/ai:dev -c 'echo \"this container thinks it is version $SERVICE_VERSION\"'",
+        commandParts: [
+          { piece: "docker run --rm", meaning: "Throwaway container" },
+          { piece: "-e SERVICE_VERSION=9.9.9", meaning: "Inject an environment variable for this run only" },
+          { piece: "--entrypoint sh ... -c 'echo ...'", meaning: "Print what the process sees as its version" },
+        ],
         saw: "9.9.9, a version that exists nowhere in the image. You changed how the container behaves without rebuilding anything. That's the whole technique.",
         check: { kind: "manual", label: "I saw 9.9.9" },
       },
@@ -144,6 +180,10 @@ export const CHAPTER_3: Lesson[] = [
         instruction: "Write a row into the database.",
         command:
           "docker exec container-quest-postgres-1 psql -U quest -d quest -c \"CREATE TABLE IF NOT EXISTS proof (note TEXT); INSERT INTO proof VALUES ('survived');\" ",
+        commandParts: [
+          { piece: "docker exec ... postgres", meaning: "Run a command in the database container" },
+          { piece: "psql -U quest -d quest -c '...'", meaning: "SQL: create a proof table/row inside Postgres" },
+        ],
         saw: "INSERT 0 1, one row written. It's now on disk in a volume, not inside the container.",
         check: { kind: "manual", label: "I saw INSERT 0 1" },
       },
@@ -152,12 +192,20 @@ export const CHAPTER_3: Lesson[] = [
           "Now destroy the database container completely (the same operation that wiped your file in Chapter 1) and check whether the row survived.",
         command:
           "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --force-recreate postgres && sleep 8 && docker exec container-quest-postgres-1 psql -U quest -d quest -t -c 'SELECT note FROM proof;'",
+        commandParts: [
+          { piece: "docker exec ... postgres", meaning: "Run a command in the database container" },
+          { piece: "psql -U quest -d quest -c '...'", meaning: "SQL: create a proof table/row inside Postgres" },
+        ],
         saw: "\"survived\". A brand new container, and the data is still there, because it never lived in the container. It lives in a volume that the new container attached to on startup. This is exactly the operation that destroyed your note file in Chapter 1; the only difference is the volume.",
         check: { kind: "manual", label: "I saw: survived" },
       },
       {
         instruction: "See the volume itself, which exists independently of any container.",
         command: "docker volume ls --filter name=container-quest",
+        commandParts: [
+          { piece: "docker volume ls", meaning: "List named volumes on this machine" },
+          { piece: "--filter name=container-quest", meaning: "Volumes belonging to this project" },
+        ],
         saw: "A volume, listed on its own. It outlives every container that has ever attached to it, and it stays there until something deliberately deletes it. Worth knowing: `docker compose down -v` deletes volumes; that -v flag has ended real databases.",
         check: { kind: "manual", label: "I saw the volume" },
       },

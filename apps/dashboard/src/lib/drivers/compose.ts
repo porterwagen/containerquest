@@ -83,6 +83,26 @@ function phaseOf(c: RawContainer): Replica["phase"] {
   }
 }
 
+/**
+ * Is a container with this exact name running right now?
+ *
+ * `listReplicas` cannot answer this. It filters on the Compose project label,
+ * and the containers the Chapter 0 primer asks you to create are made by hand
+ * with plain `docker run` — no project, no labels, invisible to that filter.
+ *
+ * Docker's `name` filter matches substrings, so "quest-hello" would also match
+ * "quest-hello-backup". The exact comparison afterwards is what makes this a
+ * real check rather than a near miss. Omitting `all: true` is deliberate: a
+ * stopped container is not a running one, which is precisely the question.
+ */
+export async function containerRunning(name: string): Promise<boolean> {
+  const containers = (await client().listContainers({
+    filters: JSON.stringify({ name: [name] }),
+  })) as unknown as RawContainer[];
+
+  return containers.some((c) => c.Names.some((n) => n.replace(/^\//, "") === name));
+}
+
 export async function listReplicas(): Promise<Replica[]> {
   const containers = (await client().listContainers({
     all: true,

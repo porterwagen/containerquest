@@ -1,53 +1,53 @@
 {
-  "recordedAt": "2026-07-29T19:37:14.723Z",
+  "recordedAt": "2026-07-30T19:30:46.900Z",
   "recordings": {
     "the-map:0": {
       "command": "docker --version",
       "output": "Docker version 29.4.0, build 9d7ad9f",
       "exitCode": 0,
-      "ms": 302
+      "ms": 295
     },
     "the-map:1": {
       "command": "kubectl version --client",
       "output": "Client Version: v1.36.3\nKustomize Version: v5.8.1",
       "exitCode": 0,
-      "ms": 310
+      "ms": 356
     },
     "the-system:0": {
       "command": "docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml ps",
-      "output": "NAME                             IMAGE                               COMMAND                  SERVICE        CREATED          STATUS                   PORTS\ncontainer-quest-ai-1             quest/ai:dev                        \"uvicorn main:app --…\"   ai             6 minutes ago    Up 5 minutes (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp\ncontainer-quest-compute-1        quest/compute:dev                   \"/compute\"               compute        11 minutes ago   Up 11 minutes            0.0.0.0:9000->9000/tcp, [::]:9000->9000/tcp\ncontainer-quest-dashboard-1      quest/dashboard:dev                 \"/sbin/tini -- node …\"   dashboard      9 minutes ago    Up 9 minutes (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp\ncontainer-quest-postgres-1       postgres:18-alpine                  \"docker-entrypoint.s…\"   postgres       6 minutes ago    Up 6 minutes (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp\ncontainer-quest-redis-1          redis:8-alpine                      \"docker-entrypoint.s…\"   redis          3 hours ago      Up 3 hours (healthy)     0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp\ncontainer-quest-socket-proxy-1   tecnativa/docker-socket-proxy:0.3   \"docker-entrypoint.s…\"   socket-proxy   3 hours ago      Up 3 hours               2375/tcp\ncontainer-quest-util-1           quest/util:dev                      \"/util\"                  util           5 minutes ago    Up 5 minutes             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp\ncontainer-quest-worker-1         quest/worker:dev                    \"/sbin/tini -- node …\"   worker         9 minutes ago    Up 9 minutes (healthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp",
+      "output": "NAME                             IMAGE                               COMMAND                  SERVICE        CREATED         STATUS                   PORTS\ncontainer-quest-ai-1             quest/ai:dev                        \"uvicorn main:app --\u2026\"   ai             5 minutes ago   Up 5 minutes (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp\ncontainer-quest-compute-1        quest/compute:dev                   \"/compute\"               compute        5 minutes ago   Up 5 minutes             0.0.0.0:9000->9000/tcp, [::]:9000->9000/tcp\ncontainer-quest-dashboard-1      quest/dashboard:dev                 \"/sbin/tini -- node \u2026\"   dashboard      5 minutes ago   Up 5 minutes (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp\ncontainer-quest-postgres-1       postgres:18-alpine                  \"docker-entrypoint.s\u2026\"   postgres       24 hours ago    Up 5 minutes (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp\ncontainer-quest-redis-1          redis:8-alpine                      \"docker-entrypoint.s\u2026\"   redis          27 hours ago    Up 5 minutes (healthy)   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp\ncontainer-quest-socket-proxy-1   tecnativa/docker-socket-proxy:0.3   \"docker-entrypoint.s\u2026\"   socket-proxy   27 hours ago    Up 5 minutes             2375/tcp\ncontainer-quest-util-1           quest/util:dev                      \"/util\"                  util           5 minutes ago   Up 5 minutes             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp\ncontainer-quest-worker-1         quest/worker:dev                    \"/sbin/tini -- node \u2026\"   worker         5 minutes ago   Up 5 minutes (healthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp",
       "exitCode": 0,
-      "ms": 360
+      "ms": 355
     },
     "the-system:1": {
       "command": "curl -s localhost:8080/aggregate",
-      "output": "{\"ai\":{\"service\":\"ai\",\"language\":\"python\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"2026-07-29T19:03:24Z\",\"hostname\":\"ea80611ee3d3\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":349,\"requests\":1,\"pid\":1},\"compute\":{\"service\":\"compute\",\"language\":\"c\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"unknown\",\"hostname\":\"c1b591a011f1\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":698,\"requests\":6,\"pid\":1}}",
+      "output": "{\"ai\":{\"service\":\"ai\",\"language\":\"python\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"unknown\",\"hostname\":\"9c151f2f9fd0\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":305,\"requests\":4,\"pid\":1},\"compute\":{\"service\":\"compute\",\"language\":\"c\",\"version\":\"1.0.0\",\"gitSha\":\"dev\",\"buildTime\":\"unknown\",\"hostname\":\"80932f4d8569\",\"podName\":null,\"nodeName\":null,\"namespace\":null,\"uptimeSec\":306,\"requests\":4,\"pid\":1}}",
       "exitCode": 0,
-      "ms": 297
+      "ms": 282
     },
     "toolkit:0": {
       "command": "docker logs --tail 15 container-quest-ai-1",
-      "output": "INFO:     192.168.107.9:41628 - \"GET /meta HTTP/1.1\" 200 OK\nGET /readyz 200 1ms\nINFO:     192.168.107.9:41642 - \"GET /readyz HTTP/1.1\" 200 OK\nGET /healthz 200 1ms\nINFO:     192.168.107.7:54312 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /meta 200 1ms\nINFO:     192.168.107.9:41628 - \"GET /meta HTTP/1.1\" 200 OK\nGET /readyz 200 0ms\nINFO:     192.168.107.9:41642 - \"GET /readyz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     192.168.107.7:54312 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     127.0.0.1:52356 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /meta 200 0ms\nINFO:     192.168.107.7:54312 - \"GET /meta HTTP/1.1\" 200 OK",
+      "output": "INFO:     127.0.0.1:45352 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     127.0.0.1:45354 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     127.0.0.1:60410 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /meta 200 0ms\nINFO:     192.168.107.1:38532 - \"GET /meta HTTP/1.1\" 200 OK\nGET /readyz 200 2ms\nINFO:     192.168.107.1:38548 - \"GET /readyz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     192.168.107.7:52144 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /healthz 200 0ms\nINFO:     127.0.0.1:60412 - \"GET /healthz HTTP/1.1\" 200 OK\nGET /meta 200 0ms\nINFO:     192.168.107.7:60626 - \"GET /meta HTTP/1.1\" 200 OK",
       "exitCode": 0,
-      "ms": 291
+      "ms": 285
     },
     "toolkit:1": {
       "command": "docker exec container-quest-worker-1 ls /app",
       "output": "node_modules\npackages\nservices",
       "exitCode": 0,
-      "ms": 304
+      "ms": 315
     },
     "toolkit:2": {
       "command": "docker stats --no-stream",
-      "output": "CONTAINER ID   NAME                             CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS\n7858dc95036f   container-quest-util-1           0.20%     10.12MiB / 11.74GiB   0.08%     160kB / 153kB     19.6MB / 0B       10\n0137f22cb258   container-quest-postgres-1       0.03%     27.62MiB / 11.74GiB   0.23%     20.9kB / 18.9kB   44.4MB / 688kB    10\nea80611ee3d3   container-quest-ai-1             0.70%     38.83MiB / 11.74GiB   0.32%     126kB / 114kB     42.1MB / 0B       1\n7e87c2ba0c3e   container-quest-dashboard-1      2.85%     77.62MiB / 11.74GiB   0.65%     8.04MB / 2.01MB   200MB / 0B        12\ne831d0ce564e   container-quest-worker-1         0.28%     38.7MiB / 11.74GiB    0.32%     533kB / 685kB     106MB / 0B        12\nc1b591a011f1   container-quest-compute-1        0.07%     184KiB / 11.74GiB     0.00%     401kB / 376kB     172kB / 0B        1\n8b6fdcb511e3   cq-lite-lab-1                    0.48%     49.29MiB / 11.74GiB   0.41%     3.72MB / 584kB    2.1GB / 0B        11\nb39f4c0e3ead   cq-lite-compute-2                0.01%     12KiB / 11.74GiB      0.00%     167kB / 196kB     4.32MB / 0B       1\nca6af68e893c   container-quest-socket-proxy-1   0.17%     5.18MiB / 11.74GiB    0.04%     4.3MB / 98.1MB    109MB / 12.3kB    11\n95229784d712   container-quest-redis-1          1.91%     20.44MiB / 11.74GiB   0.17%     12MB / 4.76MB     1.13GB / 0B       15\n398e42b1272e   container-quest-control-plane    15.47%    690MiB / 11.74GiB     5.74%     6.96MB / 27.2MB   52.1GB / 2.04GB   279\nafba47a6c692   container-quest-worker           1.76%     194MiB / 11.74GiB     1.61%     15.8MB / 3.79MB   14.5GB / 910MB    129\n06782f7ae1a3   container-quest-worker2          4.22%     225.6MiB / 11.74GiB   1.88%     15.3MB / 3.66MB   14.7GB / 911MB    142",
+      "output": "CONTAINER ID   NAME                             CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS\n64f801f16327   quest-hello                      0.00%     18.48MiB / 11.74GiB   0.15%     1.65kB / 744B     0B / 0B           7\n90f3de0f3bd9   container-quest-dashboard-1      0.00%     58.52MiB / 11.74GiB   0.49%     1.29kB / 126B     26.8MB / 0B       12\n30dfe134f989   container-quest-util-1           0.00%     5.848MiB / 11.74GiB   0.05%     28kB / 26.7kB     15.5MB / 0B       7\ndb2436ce437f   container-quest-worker-1         0.00%     39.33MiB / 11.74GiB   0.33%     68.5kB / 81.2kB   31MB / 0B         12\n9c151f2f9fd0   container-quest-ai-1             12.08%    34.75MiB / 11.74GiB   0.29%     17kB / 14.5kB     30.5MB / 0B       1\n80932f4d8569   container-quest-compute-1        0.00%     48KiB / 11.74GiB      0.00%     17.5kB / 15.8kB   94.2kB / 0B       1\na63e1e440fef   container-quest-postgres-1       1.77%     27.98MiB / 11.74GiB   0.23%     9.37kB / 8.77kB   55.5MB / 360kB    10\n8b6fdcb511e3   cq-lite-lab-1                    0.00%     38.73MiB / 11.74GiB   0.32%     1.52kB / 126B     165MB / 0B        11\nb39f4c0e3ead   cq-lite-compute-2                0.00%     8KiB / 11.74GiB       0.00%     1.74kB / 126B     135kB / 0B        1\nca6af68e893c   container-quest-socket-proxy-1   0.04%     3.758MiB / 11.74GiB   0.03%     3.64kB / 126B     14MB / 12.3kB     11\n95229784d712   container-quest-redis-1          1.34%     10.26MiB / 11.74GiB   0.09%     72.4kB / 52.7kB   79.8MB / 0B       15\n398e42b1272e   container-quest-control-plane    7.93%     645.4MiB / 11.74GiB   5.37%     391kB / 1.64MB    1.82GB / 35.3MB   266\nafba47a6c692   container-quest-worker           2.76%     152.1MiB / 11.74GiB   1.27%     832kB / 237kB     657MB / 4.3MB     109\n06782f7ae1a3   container-quest-worker2          1.32%     178MiB / 11.74GiB     1.48%     907kB / 248kB     684MB / 5.32MB    126",
       "exitCode": 0,
-      "ms": 2387
+      "ms": 2370
     },
     "toolkit:3": {
       "command": "docker inspect container-quest-ai-1 --format 'restarts={{.RestartCount}} status={{.State.Status}}'",
-      "output": "restarts=1 status=running",
+      "output": "restarts=0 status=running",
       "exitCode": 0,
-      "ms": 326
+      "ms": 378
     },
     "what-problem:0": {
       "command": "docker ps --format 'table {{.Names}}\\t{{.Image}}\\t{{.Status}}'",
@@ -423,7 +423,7 @@
     },
     "own-dockerfile:1": {
       "command": "cd ~/quest-myapp && docker build -t myapp:1.0.0 .",
-      "output": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 125B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:24-alpine\n#2 DONE 0.5s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 362B done\n#4 DONE 0.0s\n\n#5 [1/3] FROM docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd\n#5 resolve docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd 0.0s done\n#5 DONE 0.0s\n\n#6 [2/3] WORKDIR /app\n#6 CACHED\n\n#7 [3/3] COPY server.js .\n#7 CACHED\n\n#8 exporting to image\n… (8 more lines)",
+      "output": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 125B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:24-alpine\n#2 DONE 0.5s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 362B done\n#4 DONE 0.0s\n\n#5 [1/3] FROM docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd\n#5 resolve docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd 0.0s done\n#5 DONE 0.0s\n\n#6 [2/3] WORKDIR /app\n#6 CACHED\n\n#7 [3/3] COPY server.js .\n#7 CACHED\n\n#8 exporting to image\n\u2026 (8 more lines)",
       "exitCode": 0,
       "ms": 1192
     },
@@ -480,6 +480,78 @@
       "output": "NAME                           READY   STATUS        RESTARTS   AGE\npod/ai-854c7c67df-84wpx        1/1     Running       0          80m\npod/compute-59bb8df4f7-2x5vx   1/1     Terminating   0          41s\npod/compute-59bb8df4f7-4q6xh   1/1     Terminating   0          36s\npod/compute-f78b5cb74-lw586    1/1     Running       0          25s\npod/compute-f78b5cb74-qkz76    1/1     Terminating   0          6m47s\npod/compute-f78b5cb74-ts47t    1/1     Running       0          20s\npod/myapp-657c6995c8-72bjh     1/1     Terminating   0          17s\npod/myapp-657c6995c8-v7rqs     1/1     Terminating   0          17s\npod/util-68bcd76c75-c2bph      1/1     Running       0          80m\npod/util-68bcd76c75-jhgpd      1/1     Running       0          80m\n\nNAME              TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE\nservice/ai        NodePort   10.96.12.203    <none>        8000:30080/TCP   80m\nservice/compute   NodePort   10.96.185.197   <none>        9000:30090/TCP   80m\nservice/util      NodePort   10.96.233.121   <none>        8080:30081/TCP   80m\n\nNAME                      READY   UP-TO-DATE   AVAILABLE   AGE\ndeployment.apps/ai        1/1     1            1           80m\ndeployment.apps/compute   2/2     2            2           80m\ndeployment.apps/util      2/2     2            2           80m\n\nNAME                                 DESIRED   CURRENT   READY   AGE\nreplicaset.apps/ai-854c7c67df        1         1         1       80m\nreplicaset.apps/compute-59bb8df4f7   0         0         0       78m\nreplicaset.apps/compute-f78b5cb74    2         2         2       80m\nreplicaset.apps/util-68bcd76c75      2         2         2       80m",
       "exitCode": 0,
       "ms": 333
+    },
+    "first-container:0": {
+      "command": "docker run --rm python:3.13-alpine python -c \"print(2**100)\"",
+      "output": "1267650600228229401496703205376\n\nUnable to find image 'python:3.13-alpine' locally\n3.13-alpine: Pulling from library/python\nc4786242540a: Pulling fs layer\neaacd48516bc: Pulling fs layer\nefbec88780d1: Pulling fs layer\neaacd48516bc: Download complete\nefbec88780d1: Download complete\n0b5149b87617: Download complete\nc4786242540a: Download complete\nefbec88780d1: Pull complete\nf0658049f93f: Download complete\neaacd48516bc: Pull complete\nc4786242540a: Pull complete\nDigest: sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0\nStatus: Downloaded newer image for python:3.13-alpine",
+      "exitCode": 0,
+      "ms": 2097
+    },
+    "first-container:1": {
+      "command": "docker run --rm python:3.13-alpine cat /etc/os-release",
+      "output": "NAME=\"Alpine Linux\"\nID=alpine\nVERSION_ID=3.24.1\nPRETTY_NAME=\"Alpine Linux v3.24\"\nHOME_URL=\"https://alpinelinux.org/\"\nBUG_REPORT_URL=\"https://gitlab.alpinelinux.org/alpine/aports/-/issues\"",
+      "exitCode": 0,
+      "ms": 493
+    },
+    "first-container:2": {
+      "command": "docker images python:3.13-alpine",
+      "output": "IMAGE                ID             DISK USAGE   CONTENT SIZE   EXTRA\npython:3.13-alpine   399babc8b495       74.5MB         17.9MB        \n\nWARNING: This output is designed for human readability. For machine-readable output, please use --format.",
+      "exitCode": 0,
+      "ms": 322
+    },
+    "first-dockerfile:0": {
+      "command": "mkdir -p ~/quest-hello\ncat > ~/quest-hello/server.js <<'EOF'\nconst http = require(\"http\");\nconst os = require(\"os\");\n\nhttp.createServer((req, res) => {\n  res.writeHead(200, { \"content-type\": \"application/json\" });\n  res.end(JSON.stringify({ service: \"quest-hello\", host: os.hostname() }));\n}).listen(4300, \"0.0.0.0\", () => console.log(\"listening on 4300\"));\nEOF\ncat ~/quest-hello/server.js",
+      "output": "const http = require(\"http\");\nconst os = require(\"os\");\n\nhttp.createServer((req, res) => {\n  res.writeHead(200, { \"content-type\": \"application/json\" });\n  res.end(JSON.stringify({ service: \"quest-hello\", host: os.hostname() }));\n}).listen(4300, \"0.0.0.0\", () => console.log(\"listening on 4300\"));",
+      "exitCode": 0,
+      "ms": 274
+    },
+    "first-dockerfile:1": {
+      "command": "cat > ~/quest-hello/Dockerfile <<'EOF'\nFROM node:24-alpine\nWORKDIR /app\nCOPY server.js .\nCMD [\"node\", \"server.js\"]\nEOF\ncat ~/quest-hello/Dockerfile",
+      "output": "FROM node:24-alpine\nWORKDIR /app\nCOPY server.js .\nCMD [\"node\", \"server.js\"]",
+      "exitCode": 0,
+      "ms": 270
+    },
+    "first-dockerfile:2": {
+      "command": "docker build -t quest-hello:1.0 ~/quest-hello",
+      "output": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 113B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:24-alpine\n#2 DONE 0.8s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 335B done\n#4 DONE 0.1s\n\n#5 [1/3] FROM docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd\n#5 resolve docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd 0.0s done\n#5 DONE 0.1s\n\n#6 [2/3] WORKDIR /app\n#6 DONE 0.0s\n\n#7 [3/3] COPY server.js .\n#7 DONE 0.0s\n\n#8 exporting to image\n#8 exporting layers 0.1s done\n#8 exporting manifest sha256:822f641eae43e2a56da35b67ea1de379f9d2eafafed55648e83f3cf60556d4b3\n#8 exporting manifest sha256:822f641eae43e2a56da35b67ea1de379f9d2eafafed55648e83f3cf60556d4b3 0.0s done\n#8 exporting config sha256:9bd7498fac35dd092c53d77afb745bc41efa8ee43287520b16947609bcd3c46b 0.0s done\n#8 exporting attestation manifest sha256:bb689b5328b28e3b3407a19aeb6e424509777eff7b77fc543cd6cde65e6a6ca4 0.0s done\n#8 exporting manifest list sha256:982defecd35fd12feaa7d76b627e0096eb085e4469049fa19a5dbdf5c14b374e\n#8 exporting manifest list sha256:982defecd35fd12feaa7d76b627e0096eb085e4469049fa19a5dbdf5c14b374e 0.0s done\n#8 naming to docker.io/library/quest-hello:1.0 done\n#8 unpacking to docker.io/library/quest-hello:1.0 0.0s done\n#8 DONE 0.2s",
+      "exitCode": 0,
+      "ms": 1831
+    },
+    "first-dockerfile:3": {
+      "command": "docker rm -f quest-hello >/dev/null 2>&1; docker run -d --name quest-hello -p 4300:4300 quest-hello:1.0 && sleep 1 && curl -s localhost:4300",
+      "output": "33ebfd50f68749f6ff704236a13ac1995fab767b4c11ff22f1c7adbc7d7985d1\n{\"service\":\"quest-hello\",\"host\":\"33ebfd50f687\"}",
+      "exitCode": 0,
+      "ms": 1518
+    },
+    "adding-a-dependency:0": {
+      "command": "cat > ~/quest-hello/server.js <<'EOF'\nconst express = require(\"express\");\nconst os = require(\"os\");\n\nconst app = express();\napp.get(\"/\", (req, res) =>\n  res.json({ service: \"quest-hello\", host: os.hostname(), framework: \"express\" }),\n);\napp.listen(4300, \"0.0.0.0\", () => console.log(\"listening on 4300\"));\nEOF\ncat > ~/quest-hello/Dockerfile <<'EOF'\nFROM node:24-alpine\nWORKDIR /app\nCOPY server.js .\nCMD [\"node\", \"server.js\"]\nEOF\ndocker build -t quest-hello:2.0 ~/quest-hello",
+      "output": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 113B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:24-alpine\n#2 DONE 0.2s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 302B done\n#4 DONE 0.0s\n\n#5 [1/3] FROM docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd\n#5 resolve docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd 0.0s done\n#5 DONE 0.0s\n\n#6 [2/3] WORKDIR /app\n#6 CACHED\n\n#7 [3/3] COPY server.js .\n#7 DONE 0.0s\n\n#8 exporting to image\n#8 exporting layers 0.1s done\n#8 exporting manifest sha256:1c7a86259b3f2a31a9c2ffbfbae32ad0b999ee1b5ca7429df5cf12950fbcf4f5 done\n#8 exporting config sha256:1d703e8c5d753cd890bb7ac746cafb25f647dbcf67f5fe39351383273f66d414 done\n#8 exporting attestation manifest sha256:b3840660d4116ef117f226cf007c5a77382281150124650fa3551cc134760f08 0.0s done\n#8 exporting manifest list sha256:58ab31391952edb01865a4926b3467538c9dc056f1155c77af7b2a3b3aa0f736 done\n#8 naming to docker.io/library/quest-hello:2.0 done\n#8 unpacking to docker.io/library/quest-hello:2.0 0.0s done\n#8 DONE 0.1s",
+      "exitCode": 0,
+      "ms": 891
+    },
+    "adding-a-dependency:1": {
+      "command": "docker run --rm quest-hello:2.0",
+      "output": "node:internal/modules/cjs/loader:1520\n  throw err;\n  ^\n\nError: Cannot find module 'express'\nRequire stack:\n- /app/server.js\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)\n    at Module._load (node:internal/modules/cjs/loader:1294:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.require (node:internal/modules/cjs/loader:1617:12)\n    at require (node:internal/modules/helpers:153:16)\n    at Object.<anonymous> (/app/server.js:1:17)\n    at Module._compile (node:internal/modules/cjs/loader:1871:14) {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: [ '/app/server.js' ]\n}\n\nNode.js v24.18.0",
+      "exitCode": 1,
+      "ms": 506
+    },
+    "adding-a-dependency:2": {
+      "command": "cat > ~/quest-hello/package.json <<'EOF'\n{\n  \"name\": \"quest-hello\",\n  \"version\": \"2.1.0\",\n  \"dependencies\": { \"express\": \"^5.1.0\" }\n}\nEOF\ncat > ~/quest-hello/Dockerfile <<'EOF'\nFROM node:24-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install --no-fund --no-audit --no-update-notifier --loglevel=error\nCOPY server.js .\nCMD [\"node\", \"server.js\"]\nEOF\ncat ~/quest-hello/Dockerfile",
+      "output": "FROM node:24-alpine\nWORKDIR /app\nCOPY package.json .\nRUN npm install --no-fund --no-audit --no-update-notifier --loglevel=error\nCOPY server.js .\nCMD [\"node\", \"server.js\"]",
+      "exitCode": 0,
+      "ms": 302
+    },
+    "adding-a-dependency:3": {
+      "command": "docker build -t quest-hello:2.1 ~/quest-hello",
+      "output": "#0 building with \"orbstack\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 210B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/node:24-alpine\n#2 DONE 0.3s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [internal] load build context\n#4 transferring context: 161B done\n#4 DONE 0.0s\n\n#5 [1/5] FROM docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd\n#5 resolve docker.io/library/node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd 0.0s done\n#5 DONE 0.0s\n\n#6 [2/5] WORKDIR /app\n#6 CACHED\n\n#7 [3/5] COPY package.json .\n#7 DONE 0.0s\n\n#8 [4/5] RUN npm install --no-fund --no-audit --no-update-notifier --loglevel=error\n#8 1.367 \n#8 1.367 added 67 packages in 1s\n#8 DONE 1.4s\n\n#9 [5/5] COPY server.js .\n#9 DONE 0.0s\n\n#10 exporting to image\n#10 exporting layers\n#10 exporting layers 0.2s done\n#10 exporting manifest sha256:019e549c491e424714bcefb67508c8ba09eaa6d3e132d1b2302b7bbc13cb4bae done\n#10 exporting config sha256:ee616add5aa86e3ca871d34f3b4420c81a56a5c7b505530b06328481c37a5b79 done\n#10 exporting attestation manifest sha256:0e3456b527f17aa854e4b15f701675a01bf36a0d1855c96386735bf691e7b74b 0.0s done\n#10 exporting manifest list sha256:51a5790c32ed9e25a55facb0ea61a0a03d531e5f32353505b11658ac10dc57f2 done\n#10 naming to docker.io/library/quest-hello:2.1 done\n#10 unpacking to docker.io/library/quest-hello:2.1 0.1s done\n#10 DONE 0.3s",
+      "exitCode": 0,
+      "ms": 2631
+    },
+    "adding-a-dependency:4": {
+      "command": "docker rm -f quest-hello >/dev/null 2>&1; docker run -d --name quest-hello -p 4300:4300 quest-hello:2.1 && sleep 1 && curl -s localhost:4300",
+      "output": "64f801f163275c4767843ebaa8f51a6d44cfdca135e4d2071378633675dbc86d\n{\"service\":\"quest-hello\",\"host\":\"64f801f16327\",\"framework\":\"express\"}",
+      "exitCode": 0,
+      "ms": 1595
     }
   }
 }

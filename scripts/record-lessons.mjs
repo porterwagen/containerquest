@@ -27,8 +27,16 @@ const exec = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "apps/dashboard/src/generated/recordings.json");
 
-/** Long output is trimmed — nobody reads 400 lines in a replay pane. */
-const MAX_LINES = 28;
+/**
+ * Long output is trimmed — nobody reads 400 lines in a replay pane.
+ *
+ * Note that trim() keeps the FIRST N lines, so a build log loses its tail.
+ * 28 was cutting the "naming to docker.io/..." success line off every
+ * `docker build`, which is the one line proving the build worked. 45 still
+ * cut it from the Chapter 0 build that also runs `npm install`, which is
+ * the longest log the course records. 60 clears it with room to spare.
+ */
+const MAX_LINES = 60;
 const MAX_CHARS = 4_000;
 
 /** Commands that take a while (image builds, rollouts) need room. */

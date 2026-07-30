@@ -1,7 +1,24 @@
 import { NextResponse } from "next/server";
 import { pollFleet } from "@/lib/fleet";
-import { listReplicas, dockerAvailable } from "@/lib/drivers/compose";
+import { containerRunning, listReplicas, dockerAvailable } from "@/lib/drivers/compose";
+import { LESSONS } from "@/lessons";
 import type { ProbeMap } from "@/lessons/types";
+
+/**
+ * Container names the course asks about by name rather than by service id.
+ *
+ * Read out of the lessons instead of hardcoded, so adding a `running` check to
+ * a lesson is the only edit needed. A list maintained by hand here would drift
+ * the first time someone renamed a container in a lesson and forgot this file.
+ */
+const NAMED_CONTAINERS = [
+  ...new Set(
+    LESSONS.flatMap((l) => l.steps)
+      .map((s) => s.check)
+      .filter((c) => c.kind === "running")
+      .map((c) => c.container),
+  ),
+];
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +57,28 @@ export async function GET() {
       up: entry.status !== "down",
       hostname: entry.meta?.hostname ?? "",
     };
+  }
+
+  // Primer containers are checked purely for existence. They report no /meta,
+  // so every other field is a zero: the only honest signal here is `up`.
+  if (dockerAvailable()) {
+    await Promise.all(
+      NAMED_CONTAINERS.map(async (name) => {
+        try {
+          const up = await containerRunning(name);
+          probes[name] = {
+            requests: 0,
+            uptimeSec: 0,
+            restarts: 0,
+            ready: up,
+            up,
+            hostname: "",
+          };
+        } catch {
+          /* runtime unreachable; running-based checks simply won't pass */
+        }
+      }),
+    );
   }
 
   return NextResponse.json(
