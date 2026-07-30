@@ -122,7 +122,7 @@ function reduce(state: FleetState, action: Action): FleetState {
         at: e.at,
         service: e.service,
         level: "warn",
-        message: `${e.probe} probe failed — ${e.detail}`,
+        message: `${e.probe} probe failed: ${e.detail}`,
       });
       return next;
 

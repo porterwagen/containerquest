@@ -5,10 +5,13 @@ import Link from "next/link";
 import {
   LESSONS,
   chapters,
+  chapterMeta,
   evaluate,
+  isChapterEnd,
   type Lesson,
   type ProbeMap,
   type CommandPart,
+  type Predict,
   type Scaffold,
   type Step,
 } from "@/lessons";
@@ -109,7 +112,7 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
             </button>
           ) : (
             <span className="text-[13px] text-ink-faint">
-              End of the written chapters — more coming.
+              End of the written chapters. More coming.
             </span>
           )}
         </nav>
@@ -138,39 +141,67 @@ function Sidebar({
         </span>
       </div>
 
-      {chapters().map((ch) => (
-        <div key={ch.number} className="mb-4">
-          <div className="mb-1.5 text-[11px] font-medium text-ink-dim">
-            {ch.number}. {ch.title}
-          </div>
-          <ul className="space-y-0.5">
-            {ch.lessons.map((l) => {
-              const isDone = done.includes(l.id);
-              const isCurrent = l.id === current;
-              return (
-                <li key={l.id}>
-                  <button
-                    onClick={() => onSelect(l.id)}
-                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
-                      isCurrent
-                        ? "bg-panel-2 text-ink"
-                        : "text-ink-faint hover:bg-panel hover:text-ink-dim"
-                    }`}
-                  >
-                    <span
-                      className="shrink-0 font-mono text-[10px]"
-                      style={{ color: isDone ? "var(--color-live)" : "var(--color-ink-faint)" }}
+      {chapters().map((ch) => {
+        const chDone = ch.lessons.filter((l) => done.includes(l.id)).length;
+        return (
+          <div key={ch.number} className="mb-4">
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <span className="text-[11px] font-medium text-ink-dim">
+                {ch.number}. {ch.title}
+              </span>
+              <span
+                className="shrink-0 font-mono text-[10px]"
+                style={{
+                  color:
+                    chDone === ch.lessons.length
+                      ? "var(--color-live)"
+                      : "var(--color-ink-faint)",
+                }}
+              >
+                {chDone}/{ch.lessons.length}
+              </span>
+            </div>
+            <ul className="space-y-0.5">
+              {ch.lessons.map((l, i) => {
+                const isDone = done.includes(l.id);
+                const isCurrent = l.id === current;
+                // A long chapter reads as a few short arcs rather than one
+                // undifferentiated wall. Drawn whenever the label changes.
+                const newSection = l.section && l.section !== ch.lessons[i - 1]?.section;
+                return (
+                  <li key={l.id}>
+                    {newSection && (
+                      <div
+                        className={`px-2 pb-1 text-[10px] uppercase tracking-[0.12em] text-ink-faint ${
+                          i === 0 ? "" : "mt-2.5 border-t border-edge pt-2.5"
+                        }`}
+                      >
+                        {l.section}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => onSelect(l.id)}
+                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+                        isCurrent
+                          ? "bg-panel-2 text-ink"
+                          : "text-ink-faint hover:bg-panel hover:text-ink-dim"
+                      }`}
                     >
-                      {isDone ? "✓" : "○"}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
+                      <span
+                        className="shrink-0 font-mono text-[10px]"
+                        style={{ color: isDone ? "var(--color-live)" : "var(--color-ink-faint)" }}
+                      >
+                        {isDone ? "✓" : "○"}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
 
       <p className="mt-5 border-t border-edge pt-4 text-[11.5px] leading-relaxed text-ink-faint">
         {mode === "demo"
@@ -285,7 +316,28 @@ function LessonView({
         ))}
       </div>
 
-      {allDone && (
+      {/* `done` as well as `allDone`, so a finished lesson still shows its
+          recap and takeaway when you come back to review. Step state resets on
+          navigation (LessonView is keyed on lesson.id), so without this a
+          completed lesson renders as if you had never touched it. */}
+      {(allDone || done) && lesson.recap && lesson.recap.length > 0 && (
+        <section className="fade-up mt-7 rounded-xl border border-edge bg-panel p-5">
+          <h2 className="text-[11px] uppercase tracking-[0.14em] text-beam">What you just did</h2>
+          <ul className="mt-3 space-y-2">
+            {lesson.recap.map((line, i) => (
+              <li
+                key={i}
+                className="flex max-w-[68ch] gap-3 text-[13.5px] leading-relaxed text-ink-dim"
+              >
+                <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-beam" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(allDone || done) && (
         <div className="fade-up mt-7 rounded-xl border border-live/40 bg-live/5 p-5">
           <div className="text-[11px] uppercase tracking-[0.14em] text-live">Lesson complete</div>
           <p className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-ink">
@@ -305,7 +357,39 @@ function LessonView({
           </Link>
         </div>
       )}
+
+      {/* Finishing a chapter is the one moment worth zooming out for. Nothing
+          else in the course looks past a single lesson. */}
+      {(allDone || done) && isChapterEnd(lesson.id) && <ChapterMilestone chapter={lesson.chapter} />}
     </article>
+  );
+}
+
+function ChapterMilestone({ chapter }: { chapter: number }) {
+  const meta = chapterMeta(chapter);
+  if (!meta) return null;
+
+  return (
+    <section className="fade-up mt-4 rounded-xl border border-beam/40 bg-beam/5 p-5">
+      <div className="text-[11px] uppercase tracking-[0.14em] text-beam">
+        Chapter {meta.number} complete · {meta.title}
+      </div>
+      <p className="mt-2 text-[13px] text-ink-dim">What you can do now:</p>
+      <ul className="mt-2.5 space-y-2">
+        {meta.summary.map((line, i) => (
+          <li
+            key={i}
+            className="flex max-w-[68ch] gap-3 text-[13.5px] leading-relaxed text-ink-dim"
+          >
+            <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-beam" />
+            {line}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3.5 max-w-[62ch] text-[13px] leading-relaxed text-ink-faint">
+        {meta.nextUp}
+      </p>
+    </section>
   );
 }
 
@@ -364,6 +448,10 @@ function StepCard({
               are not the only way to understand what is being created. */}
           {step.scaffold && <ScaffoldPanel scaffold={step.scaffold} />}
 
+          {/* Above the command on purpose: the guess only works if it is made
+              before the answer is in view. Never gates completion. */}
+          {step.predict && <PredictPanel predict={step.predict} />}
+
           {/* On the web there is nothing to run against, so the command is
               shown as a replay of the real recorded session. Locally it is a
               command you copy and actually execute. */}
@@ -415,17 +503,37 @@ function StepCard({
             </p>
           )}
 
-          {!passed && isDemo && !step.command && (
+          {/* Demo mode has no services to watch, so any step that is not
+              auto-completed by playing a recording needs a button here. That
+              covers two cases: a step with no command at all, and a step whose
+              recording is missing. Without the second case a missing recording
+              is a hard dead end - no run button, no button here, and the lesson
+              can never be completed on the hosted site.
+
+              The label is the authored one rather than a generic "Got it",
+              because in demo mode it is the only comprehension prompt the
+              learner gets ("I saw: Cannot find module 'express'"). */}
+          {!passed && isDemo && (!step.command || !recording) && (
             <button
               onClick={onManual}
               className="mt-2.5 rounded-md border border-edge px-2.5 py-1.5 text-[12px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
             >
-              Got it
+              {step.check.kind === "manual" ? step.check.label : "Got it"}
             </button>
           )}
 
+          {/* Shown before the step passes, because that is when it is needed.
+              A beginner whose port is already taken otherwise hits a hard stop
+              with no idea that the error is ordinary and fixable. */}
+          {!passed && step.ifItFails && (
+            <p className="mt-2.5 max-w-[62ch] rounded-md border border-edge bg-panel-2 px-3 py-2 text-[12px] leading-relaxed text-ink-faint">
+              <span className="text-warn">If it fails: </span>
+              {step.ifItFails}
+            </p>
+          )}
+
           {passed && step.saw && (
-            <p className="fade-up mt-3 max-w-[62ch] border-l-2 border-live/40 pl-3 text-[13.5px] leading-relaxed text-ink-dim">
+            <p className="fade-up mt-3 max-w-[62ch] whitespace-pre-line border-l-2 border-live/40 pl-3 text-[13.5px] leading-relaxed text-ink-dim">
               {step.saw}
             </p>
           )}
@@ -477,12 +585,73 @@ function ConceptBlock({ text }: { text: string }) {
     );
   }
 
+  // whitespace-pre-line so a paragraph that has newlines but is neither
+  // bullet- nor number-shaped keeps them instead of collapsing to one line.
   return (
-    <p className="max-w-[68ch] text-[15px] leading-[1.65] text-ink-dim">{text}</p>
+    <p className="max-w-[68ch] whitespace-pre-line text-[15px] leading-[1.65] text-ink-dim">
+      {text}
+    </p>
   );
 }
 
 /** Token-by-token decode of a command (first time a flag appears). */
+/**
+ * Commit to an answer before running the command.
+ *
+ * Being wrong on purpose is the point: a prediction you got wrong is far more
+ * memorable than the same fact read passively. Choosing is optional and does
+ * not affect whether the step completes.
+ */
+function PredictPanel({ predict }: { predict: Predict }) {
+  const [chosen, setChosen] = useState<0 | 1 | null>(null);
+
+  return (
+    <div className="mt-3 rounded-lg border border-edge bg-panel-2 p-3.5">
+      <p className="text-[12.5px] leading-relaxed text-ink">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-beam">
+          Predict{" "}
+        </span>
+        {predict.question}
+      </p>
+
+      <div className="mt-2.5 flex flex-wrap gap-2">
+        {predict.options.map((option, i) => {
+          const isChosen = chosen === i;
+          const isRight = predict.answer === i;
+          const revealed = chosen !== null;
+          return (
+            <button
+              key={option}
+              onClick={() => setChosen(i as 0 | 1)}
+              disabled={revealed}
+              className={`rounded-md border px-3 py-1.5 text-[12px] transition-colors ${
+                revealed
+                  ? isRight
+                    ? "border-live/50 text-live"
+                    : isChosen
+                      ? "border-dead/50 text-dead"
+                      : "border-edge text-ink-faint opacity-50"
+                  : "border-edge text-ink-dim hover:border-edge-bright hover:text-ink"
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+
+      {chosen !== null && (
+        <p className="fade-up mt-3 max-w-[62ch] text-[12.5px] leading-relaxed text-ink-dim">
+          <span className={chosen === predict.answer ? "text-live" : "text-warn"}>
+            {chosen === predict.answer ? "Right. " : "Not quite. "}
+          </span>
+          {predict.because}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CommandPartsPanel({ parts }: { parts: CommandPart[] }) {
   return (
     <div className="mt-2 overflow-hidden rounded-md border border-edge">

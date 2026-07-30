@@ -9,21 +9,22 @@
  * This is the difference between a recording and a mockup, and it is the whole
  * reason the public site can be honest about what it is.
  *
- *   node scripts/record-lessons.mjs            # record everything
- *   node scripts/record-lessons.mjs --only ch0 # just one chapter
+ *   node scripts/record-lessons.mjs                       # record everything
+ *   node scripts/record-lessons.mjs --only ch0            # one chapter
+ *   node scripts/record-lessons.mjs --only first-container # one lesson
+ *   node scripts/record-lessons.mjs --missing             # only what is absent
  *
- * Commands run in lesson order, because they build on each other's state.
+ * Commands run in lesson order, because they build on each other's state. That
+ * is also why --missing is a convenience and not a guarantee: a step whose
+ * setup came from an earlier step in the same lesson needs the whole lesson.
  */
 
-import { execFile } from "node:child_process";
-import { writeFile, mkdir } from "node:fs/promises";
-import { promisify } from "node:util";
+import { spawn } from "node:child_process";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { LESSONS } from "../apps/dashboard/src/lessons/index.ts";
-
-const exec = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "apps/dashboard/src/generated/recordings.json");
 
@@ -59,34 +60,52 @@ function trim(text) {
  * actually run these: their PATH, their profile, and job control available for
  * the port-forward steps that background a process and later kill %1.
  */
-async function run(command) {
+function run(command) {
   const started = Date.now();
-  try {
-    const { stdout, stderr } = await exec("/bin/zsh", ["-lic", command], {
+
+  return new Promise((resolve) => {
+    const child = spawn("/bin/zsh", ["-lic", command], {
       cwd: ROOT,
-      timeout: TIMEOUT_MS,
-      maxBuffer: 20 * 1024 * 1024,
       env: { ...process.env, PATH: `${process.env.HOME}/.orbstack/bin:${process.env.PATH}` },
     });
-    return { output: trim([stdout, stderr].filter(Boolean).join("\n")), exitCode: 0, ms: Date.now() - started };
-  } catch (err) {
-    // A non-zero exit is often the POINT of the step — the C service has no
-    // shell, Compose refuses to scale. Those failures are the lesson, so they
-    // get recorded exactly like any other output.
-    const combined = [err.stdout, err.stderr].filter(Boolean).join("\n") || String(err.message ?? err);
-    return { output: trim(combined), exitCode: err.code ?? 1, ms: Date.now() - started };
-  }
+
+    // ONE buffer fed by both streams, in the order the bytes actually arrive.
+    //
+    // Collecting them separately and concatenating at the end reorders the
+    // session: docker writes build and pull progress to stderr and results to
+    // stdout, so `docker run` on a missing image recorded the answer first and
+    // the download after it. A lesson whose text says "first the download,
+    // then the answer" then showed the exact opposite.
+    let output = "";
+    child.stdout.on("data", (d) => (output += d));
+    child.stderr.on("data", (d) => (output += d));
+
+    const timer = setTimeout(() => child.kill("SIGKILL"), TIMEOUT_MS);
+
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      // A non-zero exit is often the POINT of the step: the C service has no
+      // shell, Compose refuses to scale. Those failures are the lesson, so
+      // they get recorded exactly like any other output.
+      resolve({ output: trim(output), exitCode: code ?? 1, ms: Date.now() - started });
+    });
+
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({ output: trim(String(err.message ?? err)), exitCode: 1, ms: Date.now() - started });
+    });
+  });
 }
 
 const onlyArg = process.argv.indexOf("--only");
 const only = onlyArg > -1 ? process.argv[onlyArg + 1] : null;
+const missingOnly = process.argv.includes("--missing");
 
 // Merge onto whatever is already recorded, so `--only ch6` re-records one
 // chapter instead of throwing the other six away.
 let recordings = {};
-if (only) {
+if (only || missingOnly) {
   try {
-    const { readFile } = await import("node:fs/promises");
     recordings = JSON.parse(await readFile(OUT, "utf8")).recordings ?? {};
     console.log(`Merging onto ${Object.keys(recordings).length} existing recordings.`);
   } catch {
@@ -97,7 +116,18 @@ if (only) {
 let recorded = 0;
 let failed = 0;
 
-const targets = LESSONS.filter((l) => (only ? `ch${l.chapter}` === only : true));
+// --only takes either a chapter ("ch0") or a single lesson id, because the
+// usual reason to re-record is that one lesson changed, and regenerating a
+// whole chapter to fix one step is how good recordings get clobbered.
+const targets = LESSONS.filter((l) => {
+  if (!only) return true;
+  return only.startsWith("ch") ? `ch${l.chapter}` === only : l.id === only;
+});
+
+if (only && targets.length === 0) {
+  console.error(`No lessons matched --only ${only}. Expected a chapter like "ch0" or a lesson id.`);
+  process.exit(1);
+}
 
 console.log(`Recording ${targets.length} lessons against the live system…\n`);
 
@@ -106,6 +136,10 @@ for (const lesson of targets) {
     if (!step.command) continue;
 
     const key = `${lesson.id}:${i}`;
+
+    // --missing fills gaps without touching recordings that are already good.
+    if (missingOnly && recordings[key]) continue;
+
     process.stdout.write(`  ${lesson.id} [${i}] … `);
 
     const result = await run(step.command);

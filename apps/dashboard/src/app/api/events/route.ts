@@ -80,7 +80,7 @@ export async function GET(request: Request) {
           service: "dashboard",
           level: "warn",
           message:
-            "Docker socket not mounted — container lifecycle is hidden. Set QUEST_ALLOW_DOCKER_SOCKET=1.",
+            "Docker socket not mounted, so container lifecycle is hidden. Set QUEST_ALLOW_DOCKER_SOCKET=1.",
           replicaId: null,
         });
       }

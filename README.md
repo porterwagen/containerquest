@@ -10,7 +10,7 @@ production platform: eight services written in five languages, wired together
 with Compose and deployed to a real local Kubernetes cluster. Every lesson is a
 command you actually run, verified against services that actually change.
 
-**32 lessons. 7 chapters. 8 containers. 5 languages.**
+**38 lessons. 7 chapters. 8 containers. 5 languages.**
 
 Repository: <https://github.com/porterwagen/containerquest>
 
@@ -103,7 +103,7 @@ to any codebase.
 
 | Chapter | Title | Lessons |
 | --- | --- | --- |
-| 00 | Getting started | 7 |
+| 00 | Getting started | 13 |
 | 01 | What a container actually is | 4 |
 | 02 | Images and how they're built | 4 |
 | 03 | Networking, config, and data | 4 |
@@ -115,10 +115,12 @@ Docker first, then Compose, then Kubernetes. That is the order they were
 invented, and the order in which each one's problems make the next one make
 sense.
 
-Lessons are not marked complete by clicking a button. The dashboard watches the
-real services and verifies the effect of what you ran: a request counter rising,
-a restart count moving, a container id being replaced. If the command did not
-work, the step does not pass.
+Where a step leaves a trace the system can see, the dashboard watches for it and
+marks the step itself: a request counter rising, a restart count moving, a
+container id being replaced, a named container appearing. If the command did not
+work, those steps do not pass. Where a step has no observable effect, reading
+output, comparing two listings, understanding an error, it asks you rather than
+inventing a signal it does not have.
 
 ---
 

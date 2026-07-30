@@ -19,7 +19,7 @@ const FLEET = [
   { name: "compute", lang: "C", color: "c", role: "Raw number-crunching, in a 187 kB image", port: "9000" },
   { name: "postgres", lang: "Postgres", color: "infra", role: "The database, where durable things go", port: "5432" },
   { name: "redis", lang: "Redis", color: "infra", role: "Fast temporary store, used as the queue", port: "6379" },
-  { name: "socket-proxy", lang: "Infra", color: "infra", role: "A small security helper, met in Chapter 4", port: "2375" },
+  { name: "socket-proxy", lang: "Infra", color: "infra", role: "Guards Docker access so the dashboard cannot overreach", port: "2375" },
 ];
 
 const PRINCIPLES = [
@@ -28,8 +28,8 @@ const PRINCIPLES = [
     body: "Every command is a real command against real containers running on your machine. The output you see is the output your terminal produced, including the errors.",
   },
   {
-    title: "It checks your work",
-    body: "A lesson completes when the services actually change: a request counter rises, a restart count moves, a container id is replaced. “Complete” means complete, not “clicked next”.",
+    title: "It checks what it can",
+    body: "Where the system can prove you did something, it watches for it: a request counter rising, a restart count moving, a container id being replaced. Where it genuinely cannot tell, it asks you instead of pretending to know.",
   },
   {
     title: "You break it on purpose",

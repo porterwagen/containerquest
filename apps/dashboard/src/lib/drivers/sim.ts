@@ -226,7 +226,7 @@ export class SimDriver {
           at: Date.now(),
           service,
           level: "error",
-          message: `container exited (code 1) — restarting`,
+          message: `container exited (code 1), restarting`,
           replicaId: target.id,
         });
         this.setPhase(target, "Starting");
@@ -250,7 +250,7 @@ export class SimDriver {
           service,
           id: target.id,
           probe: "readiness",
-          detail: "chaos: unready — traffic drained, process untouched",
+          detail: "chaos: unready, traffic drained, process untouched",
         });
         break;
       case "slow":
@@ -276,7 +276,7 @@ export class SimDriver {
           at: Date.now(),
           service,
           level: "error",
-          message: `stopped responding — process alive, requests hanging (15s)`,
+          message: `stopped responding: process alive, requests hanging (15s)`,
           replicaId: target.id,
         });
         break;
@@ -297,7 +297,7 @@ export class SimDriver {
       at: Date.now(),
       service,
       level: "warn",
-      message: `pod deleted — the ReplicaSet will create a replacement`,
+      message: `pod deleted, the ReplicaSet will create a replacement`,
       replicaId: target.id,
     });
 
@@ -448,7 +448,7 @@ export class SimDriver {
       at: Date.now(),
       service,
       level: "info",
-      message: `rollout complete — all replicas on ${version}, zero downtime`,
+      message: `rollout complete: all replicas on ${version}, zero downtime`,
       replicaId: null,
     });
   }

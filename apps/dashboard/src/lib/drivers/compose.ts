@@ -95,12 +95,21 @@ function phaseOf(c: RawContainer): Replica["phase"] {
  * real check rather than a near miss. Omitting `all: true` is deliberate: a
  * stopped container is not a running one, which is precisely the question.
  */
-export async function containerRunning(name: string): Promise<boolean> {
+/**
+ * Returns the container's short id if it is running, otherwise null.
+ *
+ * The id rather than a boolean, because "is something called quest-hello up"
+ * is not the question a lesson step actually asks. A step that recreates a
+ * container needs to know it is a DIFFERENT one than before, and the id is the
+ * only thing that proves it. See the `running` case in lessons/types.ts.
+ */
+export async function containerRunning(name: string): Promise<string | null> {
   const containers = (await client().listContainers({
     filters: JSON.stringify({ name: [name] }),
   })) as unknown as RawContainer[];
 
-  return containers.some((c) => c.Names.some((n) => n.replace(/^\//, "") === name));
+  const match = containers.find((c) => c.Names.some((n) => n.replace(/^\//, "") === name));
+  return match ? match.Id.slice(0, 12) : null;
 }
 
 export async function listReplicas(): Promise<Replica[]> {

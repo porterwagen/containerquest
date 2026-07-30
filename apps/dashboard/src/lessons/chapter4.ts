@@ -179,6 +179,12 @@ export const CHAPTER_4: Lesson[] = [
         check: { kind: "manual", label: "Restart count unchanged" },
       },
     ],
+    recap: [
+      "You made a service report itself not ready while leaving the process completely healthy.",
+      "You asked both health questions at the same instant and got two different answers from one running program: liveness 200, readiness 503.",
+      "You confirmed the restart count did not move, so you have seen that unready diverts traffic while a crash restarts the container.",
+      "You can explain why putting a database check in a liveness probe turns a five-second blip into a fleet-wide outage.",
+    ],
     takeaway:
       "Liveness failing restarts you; readiness failing just stops traffic. Never check dependencies in liveness, or one slow database restarts your entire fleet.",
   },

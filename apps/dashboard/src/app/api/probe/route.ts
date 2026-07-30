@@ -59,20 +59,22 @@ export async function GET() {
     };
   }
 
-  // Primer containers are checked purely for existence. They report no /meta,
-  // so every other field is a zero: the only honest signal here is `up`.
+  // Primer containers report no /meta, so most fields are zero. The two that
+  // carry signal are `up` and `hostname`: the container id, which is what lets
+  // a step tell "still the one from the last lesson" from "a new one you just
+  // started". Without it a `running` check passes the moment a lesson opens.
   if (dockerAvailable()) {
     await Promise.all(
       NAMED_CONTAINERS.map(async (name) => {
         try {
-          const up = await containerRunning(name);
+          const id = await containerRunning(name);
           probes[name] = {
             requests: 0,
             uptimeSec: 0,
             restarts: 0,
-            ready: up,
-            up,
-            hostname: "",
+            ready: id !== null,
+            up: id !== null,
+            hostname: id ?? "",
           };
         } catch {
           /* runtime unreachable; running-based checks simply won't pass */

@@ -3,12 +3,17 @@ import type { Lesson } from "./types.ts";
 /**
  * Chapter 0 - Getting started.
  *
- * Arc: why containers exist -> a light map -> run one -> understand what that
- * was -> keep one running -> build your own image -> dependencies -> meet the
- * fleet -> toolkit. Deep process/VM identity continues in Chapter 1 with the
- * live multi-service system.
+ * The longest chapter, on purpose: it takes someone from never having typed
+ * `docker` to having built and debugged their own image. It is split into four
+ * `section` arcs so the sidebar reads as four short chapters rather than one
+ * wall. Deep process/VM identity continues in Chapter 1 against the live fleet.
  *
- * The fleet does not have to be running until `the-system`.
+ * The fleet does not have to be running until `the-system`. Everything before
+ * that needs only Docker.
+ *
+ * Recording note: `where-the-space-went` depends on `adding-a-dependency`
+ * having just built quest-hello:2.0 earlier in the same pass, so this chapter
+ * records as a whole (`--only ch0`), not step by step.
  */
 
 export const CHAPTER_0: Lesson[] = [
@@ -16,6 +21,7 @@ export const CHAPTER_0: Lesson[] = [
     id: "why-containers",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 1: what a container is",
     title: "Why any of this exists",
     minutes: 5,
     concept: [
@@ -41,6 +47,10 @@ export const CHAPTER_0: Lesson[] = [
         check: { kind: "manual", label: "Docker is installed" },
       },
     ],
+    recap: [
+      "You put a name to the problem: a program needs a whole invisible world around it, and prose does not transfer that world reliably.",
+      "You have Docker installed, which is the only tool you need until Chapter 5.",
+    ],
     takeaway:
       "A program needs an invisible world around it to run. A container captures that world so it travels with the program instead of being rebuilt by hand.",
   },
@@ -49,6 +59,7 @@ export const CHAPTER_0: Lesson[] = [
     id: "the-map",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 1: what a container is",
     title: "The map: how all these words fit together",
     minutes: 5,
     concept: [
@@ -67,6 +78,8 @@ export const CHAPTER_0: Lesson[] = [
         commandParts: [
           { piece: "docker --version", meaning: "Print the Docker CLI version (proves Docker is installed and on your PATH)" },
         ],
+        ifItFails:
+          "\"Cannot connect to the Docker daemon\" means the CLI is installed but nothing is running behind it. Docker is two pieces: a command you type and a background engine that does the work. Open OrbStack or Docker Desktop, wait for it to finish starting, and run this again.",
         saw: "A version number. That is the tool that builds images and runs containers on this machine. If this failed, Docker is either not installed or not running: open OrbStack or Docker Desktop and try again.",
         check: { kind: "manual", label: "I saw a version number" },
       },
@@ -76,6 +89,10 @@ export const CHAPTER_0: Lesson[] = [
         check: { kind: "manual", label: "Ready to use Docker only" },
       },
     ],
+    recap: [
+      "You have the vocabulary you need for the next few lessons: image, container, registry, Docker. Four words, not six.",
+      "You confirmed Docker answers on your machine, which is the only prerequisite for everything in Part 1 and Part 2.",
+    ],
     takeaway:
       "Image = template on disk. Container = one instance. Docker runs those on your machine. Compose and Kubernetes come later.",
   },
@@ -84,6 +101,7 @@ export const CHAPTER_0: Lesson[] = [
     id: "first-container",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 1: what a container is",
     title: "Run your first container",
     minutes: 8,
     concept: [
@@ -132,6 +150,14 @@ export const CHAPTER_0: Lesson[] = [
       {
         instruction:
           "Those containers used --rm, so they vanished when they finished. Check whether the IMAGE stayed.",
+        predict: {
+          question:
+            "--rm deleted both containers you just ran. What happened to the Python image they were made from?",
+          options: ["It was deleted too", "It is still on disk"],
+          answer: 1,
+          because:
+            "The image and the container are separate things, and --rm only ever talks about the container. This is the distinction the whole next lesson is about, and it is the one people most often have backwards.",
+        },
         command: "docker images python:3.13-alpine",
         commandParts: [
           { piece: "docker images", meaning: "List images stored on this machine (templates, not running containers)" },
@@ -176,6 +202,12 @@ export const CHAPTER_0: Lesson[] = [
         check: { kind: "manual", label: "I removed it" },
       },
     ],
+    recap: [
+      "You ran Python 3.13 without installing Python, by using an image someone else published.",
+      "You ran a second command against the same image and saw Alpine Linux, which is the packaged world from lesson 1 made visible.",
+      "You proved --rm deletes the container and leaves the image, then ran one without --rm and found the stopped container still listed.",
+      "You removed that stopped container by name, so nothing is left over.",
+    ],
     takeaway:
       "docker run starts a container from an image. --rm deletes the instance when it exits; without --rm you can still see a stopped container. The image can remain either way.",
   },
@@ -184,8 +216,9 @@ export const CHAPTER_0: Lesson[] = [
     id: "what-you-just-ran",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 1: what a container is",
     title: "What you just ran",
-    minutes: 7,
+    minutes: 5,
     concept: [
       "You ran Docker successfully. This lesson is only about what the nouns mean, before you write a Dockerfile.",
       "An IMAGE is a package on disk: files plus a default way to start. A CONTAINER is one instance created from that package. Instances can be running or stopped. Deleting an instance does not have to delete the package.",
@@ -196,42 +229,28 @@ export const CHAPTER_0: Lesson[] = [
     steps: [
       {
         instruction:
-          "List the Python image again. This is the template (package), not a running program.",
-        command: "docker images python:3.13-alpine",
+          "One command that shows both halves at once: make an instance from the package, then list the package and the instance side by side.",
+        command:
+          'docker rm -f quest-py-once >/dev/null 2>&1; docker run --name quest-py-once python:3.13-alpine python -c "print(1+1)"; echo "--- the package (image) ---"; docker images python:3.13-alpine --format \'{{.Repository}}:{{.Tag}}  {{.Size}}\'; echo "--- the instance (container) ---"; docker ps -a --filter name=quest-py-once --format \'{{.Names}}  {{.Status}}\'; docker rm quest-py-once >/dev/null',
         commandParts: [
-          { piece: "docker images python:3.13-alpine", meaning: "Show the image you already pulled" },
+          { piece: "docker run --name quest-py-once ...", meaning: "Make one instance from the package and let it exit" },
+          { piece: "docker images ...", meaning: "The package: one line, sitting on disk" },
+          { piece: "docker ps -a --filter name=...", meaning: "The instance: exists, and is Exited" },
+          { piece: "docker rm quest-py-once", meaning: "Tidy up, leaving the package untouched" },
         ],
-        saw: "One image line. Nothing here is \"running Python\" by itself. It is the recipe sitting on disk.",
-        check: { kind: "manual", label: "I see the image" },
+        saw: "Two lists, two different things. The image line is a template with a size. The container line is an instance with a STATUS, and its status is Exited: the program finished but the object outlived it. That is why `docker ps` alone would not have shown it, and why `-a` exists.\n\nThe last command removed the instance. The image is still there, which is the whole point: one package, as many instances as you want, and deleting an instance costs you nothing.",
+        check: { kind: "manual", label: "I saw both lists" },
       },
       {
         instruction:
-          "Create a short-lived named container again (no --rm), then list all containers with that name.",
-        command:
-          'docker rm -f quest-py-once >/dev/null 2>&1; docker run --name quest-py-once python:3.13-alpine python -c "print(1+1)" && docker ps -a --filter name=quest-py-once --format "table {{.Names}}\\t{{.Status}}"',
-        commandParts: [
-          { piece: "docker run --name quest-py-once ...", meaning: "Create a container instance from the image" },
-          { piece: "docker ps -a --filter name=...", meaning: "Show that instance even after it exited" },
-        ],
-        saw: "You should see Status Exited. The program finished; the container object still exists until you remove it. That object is what people mean by \"a container\" even when it is not running.",
-        check: { kind: "manual", label: "I saw the exited container" },
-      },
-      {
-        instruction: "Remove the instance. Confirm the image is still there.",
-        command:
-          "docker rm quest-py-once && docker images python:3.13-alpine --format '{{.Repository}}:{{.Tag}} still on disk, size={{.Size}}'",
-        commandParts: [
-          { piece: "docker rm quest-py-once", meaning: "Delete the container instance" },
-          { piece: "docker images ...", meaning: "Confirm the image template remains" },
-        ],
-        saw: "Instance gone, template remains. If Docker were only \"install Python,\" removing a container would not leave a reusable image like this.",
-        check: { kind: "manual", label: "Image still listed" },
-      },
-      {
-        instruction:
-          "In your own words (no need to type anything fancy): image vs container, and process-vs-VM. Mark done when you can say it out loud.",
+          "Say it out loud in your own words: what is the difference between an image and a container, and why is a container not a small virtual machine? Nothing to type. This is the lesson.",
         check: { kind: "manual", label: "I can explain image vs container" },
       },
+    ],
+    recap: [
+      "You saw the package and the instance listed separately, from one command, and watched the instance outlive the program that ran in it.",
+      "You can now say why `docker ps` did not show it and `docker ps -a` did.",
+      "You have a working answer to \"is this a small virtual machine?\", which is no: it is a process with a private view, and that is why it starts instantly.",
     ],
     takeaway:
       "Image = package on disk. Container = one instance (running or stopped). Closer to a process with a private view than to a VM. Deleting the instance need not delete the package. Next: keep one running so you can look at a live service.",
@@ -241,6 +260,7 @@ export const CHAPTER_0: Lesson[] = [
     id: "stays-up",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 2: running real services",
     title: "A container that stays up",
     minutes: 8,
     concept: [
@@ -260,6 +280,15 @@ export const CHAPTER_0: Lesson[] = [
           { piece: "-p 8089:80", meaning: "Your Mac port 8089 maps to port 80 inside the container" },
           { piece: "nginx:alpine", meaning: "Official small nginx image" },
         ],
+        predict: {
+          question: "You are about to start a web server with -d. What does your terminal do?",
+          options: ["Hangs, showing server logs", "Prints an id and returns immediately"],
+          answer: 1,
+          because:
+            "-d means detached. Docker starts the process in the background and hands you back your prompt with the new container's id. Without -d the server would hold your terminal until you pressed Ctrl+C, which is why every long-running service you start uses it.",
+        },
+        ifItFails:
+          "\"port is already allocated\" means something else on your Mac is already using 8089. Find it with `lsof -nP -iTCP:8089 -sTCP:LISTEN`, or just pick another number: `-p 8091:80` works exactly as well, and only the left-hand number has to be free.",
         saw: "Docker prints a long container id. The process keeps running. You did not get an interactive shell; that is correct for -d.",
         check: { kind: "running", container: "quest-web" },
       },
@@ -308,14 +337,242 @@ export const CHAPTER_0: Lesson[] = [
         check: { kind: "manual", label: "quest-web is gone" },
       },
     ],
+    recap: [
+      "You started a long-running service in the background with -d and got your terminal back.",
+      "You published a port with -p and reached a program inside a container from your own browser or curl.",
+      "You read that container's logs, which is the first thing to do when anything misbehaves.",
+      "You stopped and removed it, and confirmed the name was free again.",
+    ],
     takeaway:
       "A service-shaped container runs in the background (-d), publishes ports (-p), and is inspected with ps, curl, and logs. Stop and rm end the instance; the image can remain.",
+  },
+
+  {
+    id: "publishing-ports",
+    chapter: 0,
+    chapterTitle: "Getting started",
+    section: "Part 2: running real services",
+    title: "Why -p exists, by leaving it out",
+    minutes: 7,
+    concept: [
+      "You typed `-p 8089:80` last lesson and it worked. This lesson is about what happens without it, because that is the failure you will actually hit, and \"it is running but I cannot reach it\" is one of the most common hours lost in this whole subject.",
+      "A container gets its own private network. A server inside it can be listening perfectly, answering every request it receives, and still be completely unreachable from your Mac. Nothing is broken. Nothing is in a bad state. There is simply no route in.",
+      "PUBLISHING is opt-in. `-p` is you saying: connect this port on my machine to that port inside the container. Left side is yours, right side is the container's. They do not have to match, and it is worth seeing them differ at least once so the order stops being something you guess at.",
+      "You are going to start a web server with no `-p`, fail to reach it, then prove from inside the container that it was serving the entire time. That last step is the one that makes this stick: the problem was never the server.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Start nginx again, but with no published port at all. Everything else is the same as last lesson.",
+        command:
+          "docker rm -f quest-closed >/dev/null 2>&1; docker run -d --name quest-closed nginx:alpine",
+        commandParts: [
+          { piece: "docker run -d --name quest-closed", meaning: "Background container, named so we can poke at it" },
+          { piece: "(no -p flag)", meaning: "Deliberately omitted: nothing is connected to your Mac" },
+          { piece: "nginx:alpine", meaning: "Same image as last lesson, already on disk" },
+        ],
+        saw: "A container id, exactly like last time. Docker gives no warning and no hint that anything is different. From here it looks identical to a working setup.",
+        check: { kind: "running", container: "quest-closed" },
+      },
+      {
+        instruction:
+          "Now confirm two things at once: that it is genuinely running, and that you cannot reach it. Look at the PORTS column, which will be empty.",
+        predict: {
+          question: "The server is running. Will curl on port 8090 reach it?",
+          options: ["Yes, it is running", "No, nothing connects them"],
+          answer: 1,
+          because:
+            "Running and reachable are different properties. Without -p there is no route from your Mac into the container's private network, so the request has nowhere to land. The PORTS column being empty is the visible tell.",
+        },
+        command:
+          "docker ps --filter name=quest-closed --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'; curl -s --max-time 3 http://localhost:8090/ >/dev/null 2>&1 && echo 'REACHABLE' || echo 'NOT REACHABLE from your Mac: nothing is published'",
+        commandParts: [
+          { piece: "docker ps --format '... {{.Ports}}'", meaning: "Status says Up; watch what the Ports column does and does not say" },
+          { piece: "curl --max-time 3", meaning: "Try to reach it, giving up after 3 seconds" },
+          { piece: "&& echo ... || echo ...", meaning: "Print which of the two happened, either way" },
+        ],
+        saw: "Status Up, and NOT REACHABLE. That combination is the entire lesson: a healthy running process you have no path to.\n\nLook closely at the Ports column. It says `80/tcp` and nothing else. Compare that with last lesson's, which read `0.0.0.0:8089->80/tcp`. The arrow is the whole difference. Without it, that 80 is a port the container is listening on internally, with no route from your machine to it.",
+        check: { kind: "manual", label: "I saw: NOT REACHABLE" },
+      },
+      {
+        instruction:
+          "Prove the server was fine the whole time by asking it from inside its own network, where no publishing is needed.",
+        command: "docker exec quest-closed wget -q -O - http://127.0.0.1:80/ 2>&1 | head -5",
+        commandParts: [
+          { piece: "docker exec quest-closed", meaning: "Run a command inside the running container" },
+          { piece: "wget -q -O - http://127.0.0.1:80/", meaning: "Fetch the page from inside, where it IS reachable" },
+          { piece: "head -5", meaning: "Just the first few lines of HTML" },
+        ],
+        saw: "HTML. The nginx welcome page. The server has been answering requests this whole time; there was simply no way in from outside. Nothing needed fixing in the container. The missing piece was on your side of the boundary.",
+        check: { kind: "manual", label: "I saw HTML from inside the container" },
+      },
+      {
+        instruction:
+          "Now publish it, and use deliberately different numbers on each side so the order becomes obvious.",
+        command:
+          "docker rm -f quest-open >/dev/null 2>&1; docker run -d --name quest-open -p 8090:80 nginx:alpine && sleep 1 && curl -s -o /dev/null -w 'HTTP %{http_code} from localhost:8090\\n' http://localhost:8090/",
+        commandParts: [
+          { piece: "-p 8090:80", meaning: "LEFT is your Mac (8090), RIGHT is inside the container (80)" },
+          { piece: "curl localhost:8090", meaning: "You connect to the left-hand number" },
+        ],
+        ifItFails:
+          "If you get \"port is already allocated\", something else owns 8090 on your Mac. Any free number works: try `-p 8092:80` and curl 8092 instead. Only the left-hand number has to be free, because the right-hand one lives inside the container where nothing else is running.",
+        saw: "HTTP 200. Same image, same server, same port 80 inside. The only thing that changed is that you asked Docker to connect one of your ports to it. Note you curled 8090 and nginx never knew: inside the container it is still serving on 80, exactly as before.",
+        check: { kind: "running", container: "quest-open" },
+      },
+      {
+        instruction: "Remove both containers.",
+        command:
+          "docker rm -f quest-closed quest-open >/dev/null 2>&1; docker ps -a --filter name=quest-closed --filter name=quest-open --format '{{.Names}}' | grep . || echo 'both removed'",
+        commandParts: [
+          { piece: "docker rm -f a b", meaning: "Force-remove both by name in one command" },
+          { piece: "| grep . || echo", meaning: "Print nothing left, or confirm they are gone" },
+        ],
+        saw: "Both removed. You now have the two-number mental model, and more importantly you have seen the failure it prevents.",
+        check: { kind: "manual", label: "Both are gone" },
+      },
+    ],
+    recap: [
+      "You ran a server with no published port and watched it be perfectly healthy and completely unreachable at the same time.",
+      "You proved from inside the container that the server was serving all along, so you know that symptom does not mean the program is broken.",
+      "You published with mismatched numbers and can now read `-p 8090:80` as \"my 8090 goes to its 80\" without guessing the order.",
+    ],
+    takeaway:
+      "Publishing is opt-in. Without -p a container is running and unreachable, which is not the same as broken. The left number is yours, the right one is the container's.",
+  },
+
+  {
+    id: "env-vars",
+    chapter: 0,
+    chapterTitle: "Getting started",
+    section: "Part 2: running real services",
+    title: "Same image, different settings",
+    minutes: 5,
+    concept: [
+      "Open the Docker Hub page for almost any database or service and you will see something like `-e POSTGRES_PASSWORD=secret` in the very first example. This short lesson is so that line stops being noise.",
+      "An image should be the same everywhere it runs. That is the whole promise: the thing you tested is the thing you ship. But a password, a database address, or a log level obviously has to differ between your laptop and production.",
+      "So the settings are not baked in. They are handed to the container when it starts, as ENVIRONMENT VARIABLES: named values the program can read. `-e NAME=value` sets one. The image stays identical; only the run changes.",
+      "This is also why you can use the same official Postgres image everyone else uses, with your own password, without building anything.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Pass a value in, and have the program inside read it back. Nothing is built and nothing is written to disk.",
+        command:
+          "docker run --rm -e GREETING='hello from outside' alpine:3.23 sh -c 'echo \"the container sees: $GREETING\"'",
+        commandParts: [
+          { piece: "-e GREETING='hello from outside'", meaning: "Set an environment variable for this run only" },
+          { piece: "alpine:3.23", meaning: "A tiny Linux image, about 8 MB" },
+          { piece: "sh -c 'echo \"... $GREETING\"'", meaning: "Read the variable back from inside the container" },
+        ],
+        saw: "The container printed the value you passed in. You did not edit a file, rebuild an image, or restart anything. The value crossed the boundary at startup because you asked it to.",
+        check: { kind: "manual", label: "I saw my value echoed back" },
+      },
+      {
+        instruction:
+          "Every image ships with some variables already set. Look at what the Python image brings with it.",
+        command: "docker run --rm python:3.13-alpine env",
+        commandParts: [
+          { piece: "env", meaning: "Print every environment variable visible inside the container" },
+        ],
+        saw: "A short list. PATH tells the shell where to find programs. PYTHON_VERSION was set by whoever built this image. HOSTNAME is the container's id, which is why it looks random. These are defaults the image carries; anything you pass with -e is added on top or overrides one.",
+        check: { kind: "manual", label: "I saw the variable list" },
+      },
+      {
+        instruction:
+          "Run the same image again with no -e at all, and see what a program gets when a setting is simply absent.",
+        command:
+          "docker run --rm python:3.13-alpine sh -c 'echo \"GREETING is: [${GREETING:-not set}]\"'",
+        commandParts: [
+          { piece: "(no -e this time)", meaning: "Deliberately omitted, to see the empty case" },
+          { piece: "${GREETING:-not set}", meaning: "Shell shorthand: use GREETING, or this fallback if it is missing" },
+        ],
+        saw: "not set. The variable from two steps ago did not persist: it belonged to that one container, which is already gone. This is why a service that needs a password will refuse to start when you forget the -e, and why that error message is usually telling you the exact truth.",
+        check: { kind: "manual", label: "I saw: not set" },
+      },
+    ],
+    recap: [
+      "You changed a container's behavior without rebuilding anything, by passing a value at startup.",
+      "You looked at the variables an image ships with by default, and saw that yours are layered on top.",
+      "You can now read the `-e SOMETHING=value` line in any Docker Hub README and know exactly what it does.",
+    ],
+    takeaway:
+      "Build one image, configure it per run. Environment variables are how the same bytes behave differently in development and production.",
+  },
+
+  {
+    id: "reading-errors",
+    chapter: 0,
+    chapterTitle: "Getting started",
+    section: "Part 2: running real services",
+    title: "Reading the errors you are going to hit",
+    minutes: 7,
+    concept: [
+      "Everything so far worked. That is not what your first week looks like. The difference between someone who finds Docker frustrating and someone who does not is mostly whether they can read the error and tell which of four things went wrong.",
+      "Almost every early error is one of these:",
+      "1. THE ENGINE IS NOT RUNNING. \"Cannot connect to the Docker daemon.\" The command exists but nothing is behind it. Start OrbStack or Docker Desktop.\n2. THE NAME IS WRONG. \"No such container.\" You typed a name Docker does not know about, or the container is gone.\n3. THE IMAGE DOES NOT EXIST. \"pull access denied\" or \"not found.\" Usually a typo in the name or tag, occasionally a private image you cannot read.\n4. SOMETHING IS IN THE WAY. \"port is already allocated.\" Another program owns that port on your Mac.",
+      "You are going to cause three of these deliberately. The fourth, the daemon one, cannot be demonstrated here for an obvious reason: Docker has to be running for any of this to work at all.",
+      "The habit worth building: read the LAST line first. Docker tends to put the actual reason at the end, after whatever it was attempting.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Ask for logs from a container that does not exist. Expect this to fail. Read the message rather than skimming it.",
+        command: "docker logs quest-does-not-exist",
+        commandParts: [
+          { piece: "docker logs <name>", meaning: "Normally prints a container's output" },
+          { piece: "quest-does-not-exist", meaning: "A name nothing is using" },
+        ],
+        saw: "\"No such container: quest-does-not-exist\". Blunt and accurate. In real life this usually means a typo, or a container that exited and was removed. `docker ps -a` is the fix: it lists stopped ones too, so you can see whether the name is wrong or the container simply died.",
+        check: { kind: "manual", label: "I saw: No such container" },
+      },
+      {
+        instruction:
+          "Now ask for an image that was never published. This one prints several lines before the real reason.",
+        command: "docker run --rm quest-nonexistent-image:9.9.9",
+        commandParts: [
+          { piece: "quest-nonexistent-image:9.9.9", meaning: "An image name nobody has ever pushed" },
+        ],
+        saw: "Docker looks locally, does not find it, tries the registry, and fails there too. The wording mentions pull access denied or not found, and both mean the same practical thing here: the name you gave does not resolve to anything you can read. Nine times in ten it is a typo in the name or the tag. The tenth is a private image you have not logged in for.",
+        check: { kind: "manual", label: "I saw it fail to find the image" },
+      },
+      {
+        instruction:
+          "Cause a port collision on purpose: start one container on a port, then try to start a second on the same one.",
+        command:
+          "docker rm -f quest-port-a quest-port-b >/dev/null 2>&1; docker run -d --name quest-port-a -p 8090:80 nginx:alpine >/dev/null && echo 'first container started on 8090'; docker run -d --name quest-port-b -p 8090:80 nginx:alpine",
+        commandParts: [
+          { piece: "first docker run -p 8090:80", meaning: "Takes port 8090 on your Mac" },
+          { piece: "second docker run -p 8090:80", meaning: "Tries to take the same one, and cannot" },
+        ],
+        saw: "The first starts. The second fails with \"Bind for 0.0.0.0:8090 failed: port is already allocated\". Two programs cannot own the same port on one machine, which is a rule of your Mac and not of Docker. The fix is always the same: pick a different left-hand number, or stop whatever has it. Remember this one, because Chapter 4 shows it is exactly why Compose cannot run several copies of a service.",
+        check: { kind: "manual", label: "I saw: port is already allocated" },
+      },
+      {
+        instruction: "Clean up both containers.",
+        command:
+          "docker rm -f quest-port-a quest-port-b >/dev/null 2>&1; echo 'cleaned up'",
+        commandParts: [
+          { piece: "docker rm -f a b", meaning: "Remove both, ignoring the one that never started" },
+        ],
+        saw: "Cleaned up. Note the second container was created even though it failed to start, which is why removing it is not a no-op.",
+        check: { kind: "manual", label: "Cleaned up" },
+      },
+    ],
+    recap: [
+      "You made Docker fail three different ways on purpose and read what it actually said each time.",
+      "You can tell a wrong name from a missing image from an occupied port, which covers most of what goes wrong early.",
+      "You know to read the last line first, and that `docker ps -a` answers the \"no such container\" case.",
+    ],
+    takeaway:
+      "Most early Docker errors are one of four things: the engine is not running, the name is wrong, the image does not exist, or something already owns that port. The last line of the message usually says which.",
   },
 
   {
     id: "first-dockerfile",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 3: building your own images",
     title: "Write a Dockerfile, one line at a time",
     minutes: 12,
     concept: [
@@ -408,6 +665,8 @@ cat ~/quest-hello/Dockerfile`,
           { piece: "-t quest-hello:1.0", meaning: "Tag (name:version) so you can refer to it later" },
           { piece: "~/quest-hello", meaning: "Build context: folder Docker may copy files from" },
         ],
+        ifItFails:
+          "\"COPY failed\" or \"file not found\" almost always means the file is not inside the build context. COPY can only reach files under the folder you named at the end of the command, which is why `COPY ../something` never works. Check that server.js is really in ~/quest-hello.",
         saw: "Docker worked through your four lines in order, pulled the node:24-alpine base if it did not have it, copied your file in, and tagged the result quest-hello:1.0. You now have your own image sitting next to python:3.13-alpine, made the same way every image on Docker Hub was made. The part after the colon is the TAG, which is normally a version.",
         check: { kind: "manual", label: "The build finished" },
       },
@@ -429,6 +688,12 @@ cat ~/quest-hello/Dockerfile`,
         check: { kind: "running", container: "quest-hello" },
       },
     ],
+    recap: [
+      "You wrote an ordinary Node program that knows nothing about Docker, which is the point: your code does not change to be containerized.",
+      "You wrote a four-line Dockerfile and can say what each line does and which of the four questions it answers.",
+      "You built it into a tagged image of your own, made exactly the way every image on Docker Hub was made.",
+      "You ran it and reached your own program through a published port.",
+    ],
     takeaway:
       "A Dockerfile answers four questions: what to build on, what files to bring, how to install dependencies, and how to start. Four lines is a real image.",
     source: {
@@ -441,6 +706,7 @@ cat ~/quest-hello/Dockerfile`,
     id: "adding-a-dependency",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 3: building your own images",
     title: "When your app needs a package",
     minutes: 12,
     concept: [
@@ -502,8 +768,16 @@ docker build -t quest-hello:2.0 ~/quest-hello`,
         commandParts: [
           { piece: "cat > .../server.js <<'EOF' ... EOF", meaning: "Overwrite server.js with the express version" },
           { piece: "cat > .../Dockerfile <<'EOF' ... EOF", meaning: "Keep the simple Dockerfile (still no npm install)" },
-          { piece: "docker build -t quest-hello:2.0 ~/quest-hello", meaning: "Build tag 2.0 (succeeds even though express is missing at runtime)" },
+          { piece: "docker build -t quest-hello:2.0 ~/quest-hello", meaning: "Build and tag this version 2.0" },
         ],
+        predict: {
+          question:
+            "server.js now requires express, but the Dockerfile only copies server.js and never installs anything. What does the BUILD do?",
+          options: ["Fails: express is missing", "Succeeds"],
+          answer: 1,
+          because:
+            "A build runs the instructions in your Dockerfile and nothing else. It never executes your program, so it has no way to discover that a library is missing. Everything you asked for did happen. The trouble shows up one step later, when something actually tries to run.",
+        },
         saw: "The build succeeded, exactly as promised. Docker did everything you asked: it copied server.js into the image. You never told it about express, so it has no reason to think anything is missing. A successful build means your instructions ran, not that your program works.",
         check: { kind: "manual", label: "The build succeeded" },
       },
@@ -592,9 +866,16 @@ cat ~/quest-hello/Dockerfile`,
           { piece: "quest-hello:2.1", meaning: "Fixed image with express installed" },
           { piece: "curl -s localhost:4300", meaning: "Confirm the app answers on your machine" },
         ],
-        saw: "It answers, and the JSON now says framework: express. Same program that failed a moment ago, now with its dependency present.\n\nTwo things worth taking away. First, on the ordering: dependencies change rarely, your source changes constantly. Because COPY package.json comes before COPY server.js, editing your code does not force npm install to run again, and rebuilds stay fast. Flip those lines and every one-character edit re-downloads everything. Chapter 2 measures this.\n\nSecond, on files: you wrote three by hand (server.js, Dockerfile, package.json). Inside the image there is also a node_modules folder and possibly a package-lock.json, which npm generated. That distinction matters constantly. Generated things should not be copied into images or committed, which is what a .dockerignore file is for.",
+        saw: "It answers, and the JSON now says framework: express. Same program that failed a moment ago, now with its dependency present.",
         check: { kind: "running", container: "quest-hello" },
       },
+    ],
+    recap: [
+      "You built an image that succeeded and then failed to start, so you know a green build says nothing about whether your program runs.",
+      "You read \"Cannot find module\" and can name the cause: the Dockerfile copied your code and never installed anything.",
+      "You fixed it by copying the dependency list and running npm install during the build, which means npm ran inside the image and never had to exist on your machine.",
+      "On ordering: dependencies change rarely and your source changes constantly, so COPY package.json comes BEFORE COPY server.js. Editing your code then does not re-run npm install, and rebuilds stay fast. Flip those two lines and every one-character edit re-downloads everything. Chapter 2 measures exactly this.",
+      "On files: you wrote three by hand (server.js, Dockerfile, package.json). node_modules and package-lock.json were generated for you. Keeping generated things out of images is what a .dockerignore is for.",
     ],
     takeaway:
       "A build runs your Dockerfile, not your program, so a green build proves nothing about whether it starts. Copy your dependency list and install it before copying source.",
@@ -605,9 +886,108 @@ cat ~/quest-hello/Dockerfile`,
   },
 
   {
+    id: "where-the-space-went",
+    chapter: 0,
+    chapterTitle: "Getting started",
+    section: "Part 3: building your own images",
+    title: "Where the disk space went",
+    minutes: 7,
+    concept: [
+      "You have now built three images from the same tiny program: 1.0, 2.0, and 2.1. One of them is the broken one. You have also created and removed a handful of containers. None of that was free, and nothing has been cleaning up behind you.",
+      "This is the part of Docker nobody warns beginners about. A few weeks in, someone notices tens of gigabytes have vanished and has no idea what is safe to delete. The confusion is almost always the same one from Part 1: images and containers are different things, and they take up space separately.",
+      "Three things accumulate. IMAGES, which are the biggest and are shared between everything built from the same base. CONTAINERS, including stopped ones, which keep a small writable layer of whatever changed while they ran. And BUILD CACHE, the intermediate layers Docker keeps so your next build is fast.",
+      "Docker will not remove any of it on its own, because it cannot know what you still want. So the skill is being able to look, and knowing which of the three you are looking at.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Ask Docker for the summary. This is the one command worth remembering from this lesson.",
+        command: "docker system df",
+        commandParts: [
+          { piece: "docker system df", meaning: "Disk usage, split by what is using it (df = disk free, as in Unix)" },
+        ],
+        saw: "Four rows: Images, Containers, Local Volumes, Build Cache. The RECLAIMABLE column is the interesting one, because it is Docker's own estimate of what you could free without losing anything you are actively using. Your numbers will be larger than you expect, and that is normal.",
+        check: { kind: "manual", label: "I saw the four rows" },
+      },
+      {
+        instruction:
+          "Look at just your own images from the last two lessons. Three tags, all built from the same eight-line program.",
+        command:
+          "docker images --filter reference='quest-hello' --format 'table {{.Repository}}:{{.Tag}}\\t{{.Size}}\\t{{.CreatedSince}}'",
+        commandParts: [
+          { piece: "--filter reference='quest-hello'", meaning: "Only the images you built, by name" },
+          { piece: "{{.CreatedSince}}", meaning: "How long ago each was built" },
+        ],
+        saw: "Three tags. Note the sizes are each around the size of the Node base image, and they are all roughly the same. They are not really taking three times that much disk, because they share the base layers underneath. This is the layer sharing Chapter 2 explains properly. The 2.1 one is slightly larger, because it has express inside it.",
+        check: { kind: "manual", label: "I saw three tags" },
+      },
+      {
+        instruction:
+          "Now the containers. Create one that runs and exits, then look at its size, which is a column `docker ps` does not show you by default.",
+        command:
+          "docker rm -f quest-cruft >/dev/null 2>&1; docker run --name quest-cruft alpine:3.23 echo 'I ran once and stopped'; docker ps -a -s --filter name=quest-cruft --format 'table {{.Names}}\\t{{.Status}}\\t{{.Size}}'",
+        commandParts: [
+          { piece: "docker run --name quest-cruft ...", meaning: "A container that prints once and exits, without --rm" },
+          { piece: "docker ps -a -s", meaning: "-s adds the SIZE column, which is off by default" },
+        ],
+        saw: "Something like \"0B (virtual 8MB)\". Two numbers, and the difference is the whole point. The first is this container's own writable layer: what it changed, which for a container that only printed is nothing. The virtual figure includes the image underneath, which it SHARES rather than owns. Ten stopped containers from one image cost you ten small writable layers, not ten images.",
+        check: { kind: "manual", label: "I saw the size column" },
+      },
+      {
+        instruction:
+          "Delete the broken image on purpose. You know 2.0 is the one that could not start, so it is genuinely safe to remove.",
+        command:
+          "docker image rm quest-hello:2.0 && docker images --filter reference='quest-hello' --format 'table {{.Repository}}:{{.Tag}}\\t{{.Size}}'",
+        commandParts: [
+          { piece: "docker image rm quest-hello:2.0", meaning: "Remove one image by tag" },
+          { piece: "docker images ...", meaning: "Confirm the other two are untouched" },
+        ],
+        ifItFails:
+          "\"image is being used by running container\" means something is still running from it. Docker is protecting you. Find it with `docker ps -a --filter ancestor=quest-hello:2.0`, remove the container first, then the image.",
+        saw: "Untagged, then deleted, and the other two tags are still there. Deleting an image is not like deleting a folder: because layers are shared, Docker only reclaims the layers that nothing else needs. That is why the space freed is often less than the size shown.",
+        check: { kind: "manual", label: "2.0 is gone, the others remain" },
+      },
+      {
+        instruction:
+          "One more thing worth seeing: build without a tag and watch what Docker calls it.",
+        command:
+          "docker build -q -t quest-hello ~/quest-hello >/dev/null && docker images --filter reference='quest-hello' --format 'table {{.Repository}}:{{.Tag}}'",
+        commandParts: [
+          { piece: "-t quest-hello", meaning: "A name with no :version after it" },
+          { piece: "-q", meaning: "Quiet: skip the build log, we only care about the tag" },
+        ],
+        saw: "A tag called `latest` appeared. This is the single most misleading default in Docker: `latest` is not the newest version of anything. It is just the word Docker uses when you do not supply one. Deploying `latest` means nobody can tell which code is running, which is why real projects always tag with a version or a commit id.",
+        check: { kind: "manual", label: "I saw the latest tag appear" },
+      },
+      {
+        instruction:
+          "Finally, the command you will be tempted to reach for, and the one to be careful with. Nothing to run here: read it and move on.\n\n`docker system prune` deletes all stopped containers, all networks nothing is using, and dangling images. Adding `-a` also deletes every image not currently used by a running container, which will happily throw away things you wanted. Adding `--volumes` deletes data, which is how people lose databases. Start with plain `docker system prune`, read what it says it will remove, and only then confirm.",
+        check: { kind: "manual", label: "I understand what prune deletes" },
+      },
+      {
+        instruction: "Clean up the throwaway container from earlier.",
+        command: "docker rm quest-cruft",
+        commandParts: [{ piece: "docker rm quest-cruft", meaning: "Remove the stopped container by name" }],
+        saw: "Gone. You are leaving this lesson tidier than you found it, which is the habit worth keeping.",
+        check: { kind: "manual", label: "Removed" },
+      },
+    ],
+    recap: [
+      "You can see where Docker's disk usage goes, split into images, containers, volumes, and build cache.",
+      "You know a stopped container costs only its own writable layer, not a whole copy of the image.",
+      "You deleted an image by tag for a real reason, and saw that shared layers mean the space freed is often less than the size listed.",
+      "You know `latest` is just the default word for \"no tag given\", not the newest version of anything.",
+      "You know what `docker system prune` removes before you ever run it, including the two flags that can lose you data.",
+    ],
+    takeaway:
+      "Images, containers, and build cache take up space separately and Docker never cleans up on its own. `docker system df` shows you which is which, and `latest` means no tag was given.",
+  },
+
+  {
     id: "the-system",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 4: the real system",
     title: "The system you're about to learn on",
     minutes: 7,
     concept: [
@@ -617,7 +997,7 @@ cat ~/quest-hello/Dockerfile`,
       "Here's the cast. FIVE of them are services written by this project, each in a different programming language on purpose:",
       "• Dashboard (TypeScript): the web page you're reading right now. It watches everything else and draws the cards and graphs.\n• Worker (TypeScript): does slow background jobs. When work piles up, it chews through the queue.\n• AI service (Python): pretends to be a machine-learning service. Slow and memory-hungry, like the real thing.\n• Utility (Go): asks the other services how they're doing and reports back.\n• Compute (C): does raw number-crunching. It's the smallest and strangest of the five.",
       "THREE more are standard off-the-shelf software that nearly every real system has:",
-      "• PostgreSQL: the database, where things that must survive get written.\n• Redis: a fast temporary store, used here as the job queue.\n• A tiny security helper, which you'll meet properly in Chapter 4.",
+      "• PostgreSQL: the database, where things that must survive get written.\n• Redis: a fast temporary store, used here as the job queue.\n• A socket proxy: a small security helper. The dashboard needs to ask Docker what is running, but handing a container direct access to Docker is equivalent to handing it root on your Mac. This proxy sits in between and forwards only the few read-only questions the dashboard is allowed to ask.",
       "Why five different languages? Because it proves the central point of this entire course: none of this tooling cares what your program is written in. The C service was packaged with the same four questions your Node app was. Kubernetes runs them with the same configuration. The languages are as different as software gets, and the infrastructure treats them identically.",
       "That's genuinely useful to you beyond this project. Whatever you end up working on (someone else's Java service, a Rust tool, a Node API), the container skills transfer unchanged.",
     ],
@@ -651,6 +1031,11 @@ cat ~/quest-hello/Dockerfile`,
         check: { kind: "manual", label: "I looked at the Dashboard" },
       },
     ],
+    recap: [
+      "You started the eight-container fleet the rest of the course runs against.",
+      "You made one request that fanned out into several between services, which is the shape that makes tooling necessary.",
+      "You saw the same numbers you fetched by hand appear on the live dashboard.",
+    ],
     takeaway:
       "This project is eight containers in five languages, and the tooling treats all of them identically, which is exactly why container skills transfer to any codebase.",
   },
@@ -659,9 +1044,11 @@ cat ~/quest-hello/Dockerfile`,
     id: "toolkit",
     chapter: 0,
     chapterTitle: "Getting started",
+    section: "Part 4: the real system",
     title: "The five commands you'll actually use",
-    minutes: 8,
+    minutes: 10,
     concept: [
+      "One idea first, because it makes the rest of these commands make sense: when you run a command inside a container, you are working in a different world than your terminal is. Same keyboard, same screen, two completely separate filesystems. Seeing that side by side is the fastest way to stop finding `docker exec` mysterious.",
       "You have already used `docker run`, `docker ps`, `docker logs`, `docker images`, and `docker build` in earlier lessons. Time to formalize the small set you will reach for constantly, especially when something is wrong.",
       "Docker has dozens of commands. In practice, people use about five of them constantly and look the rest up when needed. Learn these now and you'll be able to follow along comfortably for the rest of the course.",
       "1. `docker ps`: what's running. Your first move, always.\n2. `docker logs`: what a program printed. Your first move when something is broken.\n3. `docker exec`: run a command inside a running container. Your way in when logs aren't enough.\n4. `docker inspect`: every detail about a container, in exhaustive JSON.\n5. `docker stats`: live CPU and memory, like Activity Monitor for containers.",
@@ -669,6 +1056,55 @@ cat ~/quest-hello/Dockerfile`,
       "Try each one now, on a system that isn't broken, so the output is familiar later when something is.",
     ],
     steps: [
+      {
+        instruction:
+          "Start a container to poke at, so the next two steps have somewhere to look. No published port this time: you will not be reaching it over the network.",
+        command:
+          "docker rm -f quest-inside >/dev/null 2>&1; docker run -d --name quest-inside nginx:alpine",
+        commandParts: [
+          { piece: "docker run -d --name quest-inside", meaning: "Background container to explore" },
+          { piece: "(no -p)", meaning: "Not needed: docker exec does not go over the network" },
+        ],
+        saw: "A container id. Nothing published, nothing to curl. This one exists purely to look inside.",
+        check: { kind: "running", container: "quest-inside" },
+      },
+      {
+        instruction:
+          "Two filesystems, one command. The top half runs inside the container, the bottom half runs on your Mac.",
+        command:
+          "echo '--- inside the container ---'; docker exec quest-inside ls /; echo '--- on your Mac ---'; ls /",
+        commandParts: [
+          { piece: "docker exec quest-inside ls /", meaning: "Run ls INSIDE the container" },
+          { piece: "ls /", meaning: "The same command, on your own machine" },
+        ],
+        saw: "Two different lists. The container's root has the ordinary Linux folders: bin, etc, usr, var. Yours has Applications, Library, System, Users. Neither can see the other. When a lesson says a container has \"its own filesystem\", this is the concrete thing that means. Nothing was virtualized to achieve it: the process is simply being shown a different root.",
+        check: { kind: "manual", label: "I saw two different listings" },
+      },
+      {
+        instruction: "Same idea for the operating system itself.",
+        command:
+          "docker exec quest-inside cat /etc/os-release | head -3; echo '--- your Mac ---'; sw_vers",
+        commandParts: [
+          { piece: "docker exec ... cat /etc/os-release", meaning: "What Linux the container believes it is" },
+          { piece: "sw_vers", meaning: "What your actual machine is" },
+        ],
+        saw: "Alpine Linux inside, macOS outside, at the same moment, on one machine. The container is not running a copy of macOS and your Mac is not running Alpine. There is one kernel underneath doing the real work, and the container has been handed a Linux-shaped view of the world.",
+        check: { kind: "manual", label: "I saw Alpine inside and macOS outside" },
+      },
+      {
+        instruction:
+          "Worth knowing but not runnable here: at your own terminal you can get an interactive shell inside a container with `docker exec -it quest-inside sh`, then look around with cd and ls and type `exit` when done. The -i keeps input open and the -t gives you a terminal. This page cannot replay that, because a recording has no keyboard. Try it in your terminal if you have one open.",
+        check: { kind: "manual", label: "Noted, I'll try it in a terminal" },
+      },
+      {
+        instruction: "Remove that container before moving on to the fleet commands.",
+        command: "docker rm -f quest-inside >/dev/null 2>&1 && echo 'quest-inside removed'",
+        commandParts: [
+          { piece: "docker rm -f quest-inside", meaning: "Stop and remove in one step" },
+        ],
+        saw: "Removed. The rest of this lesson uses the fleet containers instead.",
+        check: { kind: "manual", label: "Removed" },
+      },
       {
         instruction:
           "Read what the Python service has printed recently. Every line a program writes goes here.",
@@ -694,7 +1130,8 @@ cat ~/quest-hello/Dockerfile`,
         check: { kind: "manual", label: "I saw a file listing" },
       },
       {
-        instruction: "Watch live resource use. Press Ctrl+C to stop it.",
+        instruction:
+          "Look at live resource use. `--no-stream` takes one snapshot and exits; without it the display refreshes until you press Ctrl+C.",
         command: "docker stats --no-stream",
         commandParts: [
           { piece: "docker stats", meaning: "Live CPU/memory for containers" },
@@ -716,6 +1153,12 @@ cat ~/quest-hello/Dockerfile`,
         saw: "Two values pulled out of a very large JSON document. `inspect` on its own prints hundreds of lines; the --format flag is how you get the one field you want. Remember restart count: it becomes important in Chapter 4.",
         check: { kind: "manual", label: "I saw restarts and status" },
       },
+    ],
+    recap: [
+      "You saw the container's filesystem and your Mac's side by side, and can now say what \"its own filesystem\" concretely means.",
+      "You ran a command inside a running container with docker exec, and know how to get an interactive shell with -it when you are at a real terminal.",
+      "You have the five commands: ps, logs, exec, inspect, stats.",
+      "You have the routine for when something breaks: is it running, what did it say, then go inside and look.",
     ],
     takeaway:
       "ps, logs, exec, inspect, stats. When something breaks: is it running, what did it say, then go inside and look.",

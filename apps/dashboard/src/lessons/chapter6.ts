@@ -71,12 +71,12 @@ COPY server.js .
 EXPOSE 4000
 CMD ["node", "server.js"]
 EOF
-ls -la`,
+ls -1`,
         commandParts: [
           { piece: "mkdir -p ~/quest-myapp", meaning: "Create a scratch folder for your app" },
           { piece: "cat > server.js <<'EOF' ... EOF", meaning: "Write the Node server (same content as the panel above)" },
           { piece: "cat > Dockerfile <<'EOF' ... EOF", meaning: "Write the Dockerfile next to it" },
-          { piece: "ls -la", meaning: "Confirm the two files exist" },
+          { piece: "ls -1", meaning: "Confirm the two files exist, one per line" },
         ],
         saw: "Two files. server.js is a web server in about eight lines: note the \"0.0.0.0\" in there. The Dockerfile is five lines: pick a base, set a working folder, copy the code in, note the port, say how to start it. That's a complete, valid image definition.",
         check: { kind: "manual", label: "I created both files" },

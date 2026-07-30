@@ -63,8 +63,16 @@ deploy:
 record:
 	node scripts/record-lessons.mjs
 
+## record-missing: record only the steps that have no recording yet
+record-missing:
+	node scripts/record-lessons.mjs --missing
+
+## check-recordings: fail if any lesson step lacks a current recording
+check-recordings:
+	node scripts/check-recordings.mjs
+
 ## demo: build and serve the browser-only demo on :3100 (no Docker needed)
-demo:
+demo: check-recordings
 	NEXT_PUBLIC_QUEST_MODE=demo npm run build --workspace @quest/dashboard
 	@cp -R apps/dashboard/.next/static apps/dashboard/.next/standalone/apps/dashboard/.next/static
 	@echo "→ http://localhost:3100"
@@ -82,4 +90,4 @@ snippets:
 ledger:
 	node scripts/image-report.mjs
 
-.PHONY: help doctor up down ps logs meta cluster cluster-rm load k8s deploy record demo deploy-demo snippets ledger
+.PHONY: help doctor up down ps logs meta cluster cluster-rm load k8s deploy record record-missing check-recordings demo deploy-demo snippets ledger

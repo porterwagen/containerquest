@@ -188,6 +188,11 @@ export const CHAPTER_1: Lesson[] = [
         check: { kind: "replaced", service: "ai" },
       },
     ],
+    recap: [
+      "You wrote a file inside a running container, restarted it, and found the file still there.",
+      "You then replaced the container and found the file gone, proving restart and replace are different operations that look identical from outside.",
+      "You know which signal tells them apart: a restart keeps the container id, a replacement cannot.",
+    ],
     takeaway:
       "Restarting keeps a container's files; replacing it does not. Anything you actually need to keep (a database, uploads) has to live outside the container.",
     source: {

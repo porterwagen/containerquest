@@ -103,6 +103,12 @@ export const CHAPTER_2: Lesson[] = [
         check: { kind: "manual", label: "I saw the Debian version" },
       },
     ],
+    recap: [
+      "You compared a finished image against the build environment it came from, and saw the toolchain was over a hundred times larger than the result.",
+      "You tried to open a shell in the C service and it failed, because there is no operating system in that image at all.",
+      "You saw the Python service does carry a full Debian, and know why: an interpreter needs one and a compiled binary does not.",
+      "You can now explain why an image with no shell is harder to attack and harder to debug, which is the same fact from two directions.",
+    ],
     takeaway:
       "Build with one image, ship with another. Keep the compiler out of production and images shrink by orders of magnitude.",
     source: {
@@ -152,6 +158,12 @@ export const CHAPTER_2: Lesson[] = [
         saw: "Noticeably slower: several seconds. Changing the source invalidated the layer that copies source in, so the compile had to run again. But notice what did NOT happen: it didn't re-download the Go dependencies, because that layer sits earlier in the file and its inputs were untouched. That's the ordering rule paying off.",
         check: { kind: "manual", label: "The second build took longer" },
       },
+    ],
+    recap: [
+      "You timed a rebuild with nothing changed and watched it finish almost instantly, entirely from cache.",
+      "You changed one line of source, rebuilt, and measured the difference yourself rather than being told about it.",
+      "You saw what did NOT happen: the dependency download did not repeat, because that layer sits earlier and its inputs were untouched.",
+      "This is the same ordering rule you applied by hand in Chapter 0 when package.json was copied before server.js. Now you have the timings behind it.",
     ],
     takeaway:
       "Docker rebuilds from the first changed instruction onward. Put rarely-changing things first, frequently-changing things last, and rebuilds stay fast.",

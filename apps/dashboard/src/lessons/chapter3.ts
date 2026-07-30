@@ -16,10 +16,9 @@ export const CHAPTER_3: Lesson[] = [
     title: "Ports: why your app is running but unreachable",
     minutes: 8,
     concept: [
-      "A container gets its own private network. That's the single fact behind most \"but it's definitely running!\" confusion.",
-      "Inside the container, your program listens on a port as normal. But that port is inside its own little network, and nothing on your Mac can reach it, unless you explicitly PUBLISH it, which connects a port on your machine to a port inside the container.",
-      "That's what the `-p 3000:3000` you've seen everywhere does. Left side: the port on your machine. Right side: the port inside the container. They don't have to match, and mapping 8080 on your machine to 3000 inside is completely normal.",
-      "Now the trap that costs people entire afternoons. Inside a container, `localhost` means THIS CONTAINER ONLY. It does not mean your Mac, and it does not mean any other container. So if your program is configured to listen on `localhost` or `127.0.0.1`, it's listening on a network nothing else can reach, and publishing the port won't help. Connections will be refused, while the program insists it's running fine.",
+      "In Chapter 0 you ran a server with no `-p` and watched it be perfectly healthy and completely unreachable. That is the first half of this problem, and you have already solved it: publishing is opt-in, the left number is yours, the right one is the container's.",
+      "This lesson is the second half, and it is the version that costs people entire afternoons, because publishing the port correctly does not fix it.",
+      "Inside a container, `localhost` means THIS CONTAINER ONLY. It does not mean your Mac, and it does not mean any other container. So if your program is configured to listen on `localhost` or `127.0.0.1`, it is listening on a network nothing else can reach, and `-p` will not help you. Connections are refused while the program insists it is running fine, and the port mapping looks completely correct in `docker ps`.",
       "The fix is to listen on `0.0.0.0`, which means \"every network I'm attached to.\" If you ever hit a container that's definitely running but definitely unreachable, check this first. It's the answer far more often than not.",
       "This project hit exactly that bug during development, in a slightly nastier form: a health check used the name `localhost`, which on this system resolves to an IPv6 address first, while the program was listening only on IPv4. Same class of problem: right port, wrong network.",
     ],

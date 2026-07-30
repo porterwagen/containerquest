@@ -79,7 +79,7 @@ export const CHAPTER_5: Lesson[] = [
     title: "Pods know where they are",
     minutes: 6,
     concept: [
-      "Back in Chapter 1, when you asked a service about itself, two fields came back empty: pod name and node name. Under plain Docker there was no pod and no cluster, so there was nothing to report.",
+      "Every time you have asked a service about itself in this course, the JSON came back with two fields sitting empty: podName and nodeName. Under plain Docker there was no pod and no cluster, so there was nothing to put in them.",
       "The same code is running in your cluster right now: the identical image, unchanged. But now those fields have values, because Kubernetes injects them.",
       "This is done through something called the Downward API, which is a grand name for a simple thing: Kubernetes passes facts about a pod's own placement into the container as environment variables. A pod can learn its own name, which node it landed on, and which namespace it's in.",
       "That sounds like a small convenience. In practice it's how virtually all observability works: every log line and metric a pod emits can be tagged with exactly which pod and machine it came from. When one instance out of forty is misbehaving, this is how you find out which.",
@@ -286,6 +286,12 @@ export const CHAPTER_5: Lesson[] = [
         saw: "\"rolled back\". Same gradual, no-downtime process in reverse. This is the command you want to have practiced before the day you actually need it at 2am.",
         check: { kind: "manual", label: "I rolled it back" },
       },
+    ],
+    recap: [
+      "You changed a deployment's declaration and watched Kubernetes replace every pod without being told how.",
+      "You sampled the pods mid-rollout and saw MORE than you asked for, which is maxSurge: new ones come up before old ones go down.",
+      "You confirmed the rollout completed and that capacity never dropped below the target at any point.",
+      "You rolled it back with one command, which is the thing worth having practiced before the day you need it.",
     ],
     takeaway:
       "Rolling updates add new pods before removing old ones, gated on readiness, so deploys have no downtime and a broken deploy stalls instead of taking you down.",

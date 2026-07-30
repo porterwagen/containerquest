@@ -72,6 +72,25 @@ export interface CommandPart {
   meaning: string;
 }
 
+/**
+ * A two-option guess, asked before the command runs.
+ *
+ * Committing to an answer before seeing the result makes the result stick far
+ * better than reading it does. Use only where there is a genuine surprise; on
+ * an obvious step it is just friction. Never gates completion.
+ *
+ * If you add one, check the step's `commandParts` for spoilers first: several
+ * of them currently explain the punchline directly above the question.
+ */
+export interface Predict {
+  question: string;
+  options: [string, string];
+  /** Index of the correct option. */
+  answer: 0 | 1;
+  /** Shown once they have chosen, before they run the command. */
+  because: string;
+}
+
 export interface Step {
   /** What to do, in one imperative sentence. */
   instruction: string;
@@ -87,6 +106,16 @@ export interface Step {
    * Shown under the command box. Prefer once per new idea, not every step.
    */
   commandParts?: CommandPart[];
+  /**
+   * The one failure most likely to happen here, and what to do about it.
+   *
+   * Costs nothing to record and prevents the worst beginner outcome: a hard
+   * stop with no path forward. Priority on any step that binds a host port or
+   * creates a named container, since those are the ones that collide.
+   */
+  ifItFails?: string;
+  /** A guess to commit to before running. See `Predict`. */
+  predict?: Predict;
   /** What you should see, and what it means. Shown after the step passes. */
   saw?: string;
   check: Check;
@@ -97,11 +126,25 @@ export interface Lesson {
   chapter: number;
   chapterTitle: string;
   title: string;
+  /**
+   * Optional arc label inside a chapter. The sidebar draws a divider and this
+   * label whenever it changes, so a long chapter reads as a few short ones
+   * without renumbering anything.
+   */
+  section?: string;
   /** Honest estimate, in minutes. */
   minutes: number;
   /** The idea, before any command. Paragraphs of plain prose. */
   concept: string[];
   steps: Step[];
+  /**
+   * "What you just did", shown once the lesson is complete and on every later
+   * visit. One line per thing you performed, past tense, naming the action and
+   * the fact it demonstrated: "You ran Python 3.13 without installing Python,
+   * and the image stayed on disk after the container was deleted." Not "Images
+   * are templates", which is a `takeaway`, not a recap.
+   */
+  recap?: string[];
   /** One sentence. The thing you now know. */
   takeaway: string;
   /** Optional: the file in this repo where the idea lives. */
@@ -130,7 +173,19 @@ export function evaluate(check: Check, baseline: ProbeMap, now: ProbeMap): boole
 
   // Answered before the lookups below, because this is the one check keyed by
   // container name rather than service id, and so has no `service` field.
-  if (check.kind === "running") return now[check.container]?.up === true;
+  //
+  // "Is it up" alone is not enough. A previous lesson may have left a container
+  // of the same name running, in which case the step would pass the instant it
+  // appeared on screen. So it passes only if the container was NOT up at the
+  // baseline, or if it is up under a different id than it had then, which is
+  // what recreating it produces.
+  if (check.kind === "running") {
+    const wasUp = baseline[check.container];
+    const isUp = now[check.container];
+    if (isUp?.up !== true) return false;
+    if (wasUp?.up !== true) return true;
+    return isUp.hostname !== "" && wasUp.hostname !== "" && isUp.hostname !== wasUp.hostname;
+  }
 
   const before = baseline[check.service];
   const after = now[check.service];
