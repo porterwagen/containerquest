@@ -23,6 +23,9 @@ import { newTraceId } from "@quest/contracts";
 
 const NODES = ["node-a", "node-b", "node-c"];
 
+/** How long a caller waits before giving up on a hung callee. */
+const CALLER_TIMEOUT_MS = 3_000;
+
 interface SimService {
   id: string;
   desired: number;
@@ -67,6 +70,11 @@ export class SimDriver {
 
   private unreadyUntil = new Map<string, number>();
   private slowUntil = new Map<string, number>();
+  // A hung service is NOT a slow one. It never answers at all, while the
+  // process stays alive and the replica keeps reporting Ready. That gap is the
+  // entire reason liveness probes exist, so the simulator has to model it
+  // separately rather than folding it into added latency.
+  private hungUntil = new Map<string, number>();
   private queue = { depth: 0, active: 0, completed: 0, failed: 0 };
 
   constructor() {
@@ -165,20 +173,31 @@ export class SimDriver {
       if (!svc) return;
       const down = this.readyCount(to) === 0;
       const slow = (this.slowUntil.get(to) ?? 0) > now;
-      const ms = Math.round(svc.baseLatency * (0.6 + Math.random()) + (slow ? 2_000 : 0));
+      const hung = (this.hungUntil.get(to) ?? 0) > now;
 
-      setTimeout(() => {
-        this.emit({
-          type: "trace.span",
-          at: Date.now(),
-          service: to,
-          traceId,
-          from,
-          to,
-          ms,
-          status: down ? 0 : 200,
-        });
-      }, delay);
+      // A hung call does not come back. What the caller eventually records is
+      // its own timeout: a failed span, after waiting the full budget. The
+      // callee is still "up" the whole time, which is exactly what makes this
+      // failure mode so hard to see without a probe.
+      const ms = hung
+        ? CALLER_TIMEOUT_MS
+        : Math.round(svc.baseLatency * (0.6 + Math.random()) + (slow ? 2_000 : 0));
+
+      setTimeout(
+        () => {
+          this.emit({
+            type: "trace.span",
+            at: Date.now(),
+            service: to,
+            traceId,
+            from,
+            to,
+            ms,
+            status: down || hung ? 0 : 200,
+          });
+        },
+        hung ? delay + CALLER_TIMEOUT_MS : delay,
+      );
     };
 
     hop("dashboard", "util", 0);
@@ -235,7 +254,6 @@ export class SimDriver {
         });
         break;
       case "slow":
-      case "hang":
         this.slowUntil.set(service, Date.now() + 15_000);
         this.emit({
           type: "log",
@@ -243,6 +261,22 @@ export class SimDriver {
           service,
           level: "warn",
           message: `injected 2s latency for 15s`,
+          replicaId: target.id,
+        });
+        break;
+
+      case "hang":
+        // Note what is absent: no phase change, no restart, no probe failure.
+        // The replica goes on reporting Ready while answering nothing, so the
+        // only visible symptom is callers timing out. A liveness probe is the
+        // one thing that would catch this.
+        this.hungUntil.set(service, Date.now() + 15_000);
+        this.emit({
+          type: "log",
+          at: Date.now(),
+          service,
+          level: "error",
+          message: `stopped responding — process alive, requests hanging (15s)`,
           replicaId: target.id,
         });
         break;

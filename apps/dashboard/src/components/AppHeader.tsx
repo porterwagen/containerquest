@@ -71,7 +71,16 @@ export function AppHeader({ current, mode }: { current: "learn" | "dashboard"; m
           : real hostnames, real image sizes, real errors. Nothing here is invented. What you
           can&apos;t do from a browser is run them yourself, so those play back as a recording.{" "}
           <span className="text-ink-dim">
-            To do it for real: clone the repo and run <code className="font-mono">make up</code>.
+            To do it for real:{" "}
+            <a
+              href="https://github.com/porterwagen/containerquest"
+              target="_blank"
+              rel="noreferrer"
+              className="text-beam underline decoration-beam/40 underline-offset-2 transition-colors hover:decoration-beam"
+            >
+              clone the repo
+            </a>{" "}
+            and run <code className="font-mono">make up</code>.
           </span>
         </div>
       )}

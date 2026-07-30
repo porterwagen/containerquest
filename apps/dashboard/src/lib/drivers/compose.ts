@@ -122,13 +122,26 @@ export async function listReplicas(): Promise<Replica[]> {
 
 /** `docker compose up --scale worker=N`, over the API. */
 export async function scale(service: string, replicas: number): Promise<void> {
-  // teach: Compose cannot scale a service that publishes a fixed host port —
-  // two containers cannot both own :3001. Kubernetes solves this with a
-  // Service that load-balances across pods, which is why scaling there is
-  // one field rather than a port-mapping puzzle.
+  // teach: There are two separate reasons scaling is unavailable here, and
+  // saying "port conflict" for both would be wrong. Scaling down has no port
+  // conflict at all; it is simply not something the Docker Engine API can
+  // express, because the API has no concept of a service with a replica count.
+  // `docker compose --scale` is a CLI-side loop that creates N containers.
+  // Kubernetes puts that count in the Deployment itself, which is why scaling
+  // there is one field rather than an external command.
+  if (replicas > 1) {
+    throw new Error(
+      `Cannot scale ${service} to ${replicas} in Compose mode. It publishes a fixed host port, ` +
+        `and two containers cannot bind the same one. A Kubernetes Service load-balances across ` +
+        `pods instead, which is exactly what fixes this. Chapter 5 scales this same service to five.`,
+    );
+  }
+
   throw new Error(
-    `Scaling to ${replicas} is not available in Compose mode: ${service} publishes a fixed host port, ` +
-      `and two containers cannot bind the same one. This is exactly what a Kubernetes Service fixes.`,
+    `Cannot set ${service} to ${replicas} replica${replicas === 1 ? "" : "s"} from the dashboard. ` +
+      `There is no port conflict at this count: the Docker Engine API simply has no notion of a ` +
+      `replica count to change. Compose does scaling from the CLI, Kubernetes puts it in the ` +
+      `Deployment, and only one of those is something a dashboard can drive.`,
   );
 }
 

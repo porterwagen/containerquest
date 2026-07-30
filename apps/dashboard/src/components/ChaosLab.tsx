@@ -26,9 +26,9 @@ const CHAOS: Control[] = [
     id: "crash",
     label: "Crash",
     tone: "danger",
-    why: "The process calls exit(1). No cleanup, no graceful shutdown — exactly what a real crash looks like to whatever is supervising it.",
+    why: "The process calls exit(1). No cleanup, no graceful shutdown, exactly what a real crash looks like to whatever is supervising it.",
     watch:
-      "Uptime resets to 0 and the restart count goes up — but the hostname stays the SAME. Docker restarts the same container rather than replacing it. Kubernetes behaves identically for a crashed container inside a pod. A NEW identity only appears when the pod itself is replaced, which is what you will see in Phase 4 when you delete one.",
+      "Uptime resets to 0 and the restart count goes up, but the hostname stays the SAME. Docker restarts the same container rather than replacing it. Kubernetes behaves identically for a crashed container inside a pod. A NEW identity only appears when the pod itself is replaced, which is what you will see in Chapter 5 when you delete one.",
   },
   {
     id: "unready",
@@ -52,7 +52,7 @@ const CHAOS: Control[] = [
     tone: "danger",
     why: "The service stops answering entirely without exiting. A deadlock, an exhausted thread pool, a stuck syscall.",
     watch:
-      "This is why liveness probes exist. A crashed process is easy — the supervisor notices immediately. A hung one looks alive from the outside, so only a probe that expects an answer can catch it.",
+      "This is why liveness probes exist. A crashed process is easy: the supervisor notices immediately. A hung one looks alive from the outside, so only a probe that expects an answer can catch it. Watch the card stay green while every edge into it turns red and calls start timing out. Nothing restarts it.",
   },
 ];
 
@@ -173,9 +173,9 @@ export function ChaosLab({ mode = "live" }: { mode?: Mode }) {
         {mode === "live" && (
           <p className="rounded-md border border-edge bg-panel-2 px-3 py-2 text-[11.5px] leading-relaxed text-ink-faint">
             <span className="text-warn">Compose mode. </span>
-            Scaling and rolling deploys will fail here — and the error message explains
+            Scaling and rolling deploys will fail here, and the error message explains
             why. Both are Kubernetes capabilities that Docker Compose simply does not
-            have. Phase 4 makes these buttons work for real.
+            have. Chapter 5 runs these against a real cluster, where they work.
           </p>
         )}
 

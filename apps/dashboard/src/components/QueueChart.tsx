@@ -54,7 +54,7 @@ export function QueueChart({ points }: { points: QueuePoint[] }) {
       <div className="relative h-28 w-full px-2 py-2">
         {points.length < 2 ? (
           <div className="flex h-full items-center justify-center text-[11.5px] text-ink-faint">
-            Waiting for samples — queue 200 jobs in the Lab to see this move.
+            Waiting for samples. Queue 200 jobs in the Lab to see this move.
           </div>
         ) : (
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">

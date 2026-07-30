@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FleetEntry } from "@/lib/fleet";
 import { useEventStream } from "@/lib/useEventStream";
-import { fleetFromReplicas, type Mode } from "@/lib/control";
+import { control, fleetFromReplicas, type Mode } from "@/lib/control";
 import { ServiceCard } from "./ServiceCard";
 import { ParityPanel } from "./ParityPanel";
 import { Topology } from "./Topology";
@@ -41,7 +41,21 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
   const [polled, setPolled] = useState(initial);
   const [stale, setStale] = useState(false);
   const [tab, setTab] = useState<Tab>("overview");
+  const [generating, setGenerating] = useState(false);
   const stream = useEventStream(mode);
+
+  // The Flow tab's own traffic button, so an idle graph is one click from
+  // showing something rather than sending you to a different tab to find out.
+  async function generateTraffic() {
+    setGenerating(true);
+    try {
+      await control(mode, "traffic", "util", 8);
+    } catch {
+      // The graph is the feedback here; a failed burst simply draws nothing.
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   // Tabs live in the URL, so a specific view is linkable — "here is the thing
   // I want you to look at" is most of what sharing a dashboard is for.
@@ -144,7 +158,12 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
 
       {tab === "flow" && (
         <>
-          <Topology edges={stream.edges} fleet={fleet} />
+          <Topology
+            edges={stream.edges}
+            fleet={fleet}
+            onGenerate={generateTraffic}
+            generating={generating}
+          />
           <QueueChart points={stream.queue} />
           <Timeline logs={stream.logs} mode={mode} />
         </>

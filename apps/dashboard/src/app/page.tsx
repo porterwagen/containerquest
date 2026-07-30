@@ -9,6 +9,8 @@ import { LESSONS, chapters } from "@/lessons";
  * /dashboard pays for a live poll.
  */
 
+const REPO_URL = "https://github.com/porterwagen/containerquest";
+
 const FLEET = [
   { name: "dashboard", lang: "TypeScript", color: "typescript", role: "This page, and the instrument panel", port: "3000" },
   { name: "worker", lang: "TypeScript", color: "typescript", role: "Chews through a background job queue", port: "3001" },
@@ -79,6 +81,14 @@ export default function Landing() {
           >
             Dashboard
           </Link>
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md px-3 py-1.5 text-ink-faint transition-colors hover:text-ink"
+          >
+            GitHub
+          </a>
         </div>
       </nav>
 
@@ -284,15 +294,33 @@ export default function Landing() {
             </h2>
             <p className="mt-3 text-[13.5px] leading-relaxed text-ink-dim">
               You can read every lesson here, with real recorded output. But the point is to run
-              the commands yourself and watch your own system respond. Clone the repo, start the
-              fleet, and the dashboard turns live.
+              the commands yourself and watch your own system respond.{" "}
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-beam underline decoration-beam/40 underline-offset-2 transition-colors hover:decoration-beam"
+              >
+                Clone the repo
+              </a>
+              , start the fleet, and the dashboard turns live.
             </p>
-            <Link
-              href="/learn"
-              className="mt-6 inline-block rounded-lg bg-beam px-5 py-2.5 text-[14px] font-medium text-void transition-opacity hover:opacity-90"
-            >
-              Start the course →
-            </Link>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Link
+                href="/learn"
+                className="rounded-lg bg-beam px-5 py-2.5 text-[14px] font-medium text-void transition-opacity hover:opacity-90"
+              >
+                Start the course →
+              </Link>
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-lg border border-edge px-5 py-2.5 text-[14px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+              >
+                View on GitHub
+              </a>
+            </div>
           </div>
 
           <div className="rounded-lg border border-edge bg-void/60 p-4 font-mono text-[12.5px] leading-relaxed">

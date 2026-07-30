@@ -417,7 +417,7 @@
     },
     "own-dockerfile:0": {
       "command": "mkdir -p ~/quest-myapp && cd ~/quest-myapp && printf 'const http = require(\"http\");\\nconst PORT = process.env.PORT || 4000;\\nhttp.createServer((req, res) => {\\n  res.writeHead(200, {\"content-type\": \"application/json\"});\\n  res.end(JSON.stringify({ app: \"my-first-container\", host: require(\"os\").hostname() }));\\n}).listen(PORT, \"0.0.0.0\", () => console.log(\"listening on \" + PORT));\\n' > server.js && printf 'FROM node:24-alpine\\nWORKDIR /app\\nCOPY server.js .\\nEXPOSE 4000\\nCMD [\"node\", \"server.js\"]\\n' > Dockerfile && ls -la",
-      "output": "total 16\ndrwxr-xr-x@  4 danielporter  staff   128 Jul 29 13:36 .\ndrwxr-x---+ 42 danielporter  staff  1344 Jul 29 13:36 ..\n-rw-r--r--@  1 danielporter  staff    88 Jul 29 13:36 Dockerfile\n-rw-r--r--@  1 danielporter  staff   324 Jul 29 13:36 server.js",
+      "output": "total 16\ndrwxr-xr-x@  4 username  staff   128 Jul 29 13:36 .\ndrwxr-x---+ 42 username  staff  1344 Jul 29 13:36 ..\n-rw-r--r--@  1 username  staff    88 Jul 29 13:36 Dockerfile\n-rw-r--r--@  1 username  staff   324 Jul 29 13:36 server.js",
       "exitCode": 0,
       "ms": 282
     },

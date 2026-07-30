@@ -52,7 +52,17 @@ interface Particle {
 
 const FLIGHT_MS = 1_100;
 
-export function Topology({ edges, fleet }: { edges: TraceEdge[]; fleet: FleetEntry[] }) {
+export function Topology({
+  edges,
+  fleet,
+  onGenerate,
+  generating = false,
+}: {
+  edges: TraceEdge[];
+  fleet: FleetEntry[];
+  onGenerate?: () => void;
+  generating?: boolean;
+}) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [now, setNow] = useState(() => Date.now());
 
@@ -112,18 +122,36 @@ export function Topology({ edges, fleet }: { edges: TraceEdge[]; fleet: FleetEnt
     return counts;
   }, [edges]);
 
+  // An idle system draws an empty graph, which looks broken rather than calm.
+  // The honest fix is to say so, not to manufacture background traffic: the
+  // dashboard's own polling is deliberately excluded from every service's
+  // request counter, and the course verifies lesson steps against exactly that
+  // counter. Ambient traffic would make those checks pass on their own.
+  const idle = edges.length === 0;
+
   return (
     <section className="overflow-hidden rounded-xl border border-edge bg-panel">
-      <header className="flex items-center justify-between border-b border-edge px-5 py-3.5">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-5 py-3.5">
         <div>
           <h2 className="text-[14px] font-medium text-ink">Live request flow</h2>
           <p className="mt-0.5 text-[12px] text-ink-faint">
             Every particle is one real HTTP call, reconstructed from trace spans.
           </p>
         </div>
-        <span className="font-mono text-[10px] text-ink-faint">
-          {particles.length} in flight
-        </span>
+        <div className="flex items-center gap-3">
+          {onGenerate && (
+            <button
+              onClick={onGenerate}
+              disabled={generating}
+              className="rounded-md border border-edge bg-panel-2 px-2.5 py-1.5 font-mono text-[11px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink disabled:opacity-40"
+            >
+              {generating ? "…" : "Generate traffic"}
+            </button>
+          )}
+          <span className="font-mono text-[10px] text-ink-faint">
+            {particles.length} in flight
+          </span>
+        </div>
       </header>
 
       {/* Fixed height rather than an aspect ratio: on a wide screen 16:9 left
@@ -205,6 +233,18 @@ export function Topology({ edges, fleet }: { edges: TraceEdge[]; fleet: FleetEnt
             </div>
           );
         })}
+
+        {idle && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-4">
+            <p className="pointer-events-auto max-w-md rounded-lg border border-edge bg-panel-2/95 px-4 py-3 text-center text-[11.5px] leading-relaxed text-ink-faint">
+              <span className="text-ink-dim">No traffic yet. </span>
+              The graph draws only what actually happened, and nothing is calling
+              anything right now. The dashboard&apos;s own health polling is
+              excluded on purpose, so monitoring never masquerades as real load.
+              {onGenerate && " Generate some traffic and watch the paths light up."}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
