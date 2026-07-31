@@ -72,6 +72,24 @@ export interface CommandPart {
   meaning: string;
 }
 
+/** A lesson-owned link to the dashboard evidence for one step. */
+export interface DashboardCue {
+  view: "overview" | "experiment" | "request-path";
+  /** Named experiment when `view` is `experiment`. */
+  experiment?:
+    | "restart-vs-replace"
+    | "crash-recovery"
+    | "readiness"
+    | "compose-limits"
+    | "k8s-selfheal"
+    | "k8s-scaling"
+    | "k8s-rollout";
+  /** Service card to emphasize on Overview. */
+  focus?: string;
+  /** Learner-facing button label. */
+  label: string;
+}
+
 /**
  * A two-option guess, asked before the command runs.
  *
@@ -116,6 +134,8 @@ export interface Step {
   ifItFails?: string;
   /** A guess to commit to before running. See `Predict`. */
   predict?: Predict;
+  /** Open the exact dashboard evidence this step uses. */
+  dashboard?: DashboardCue;
   /** What you should see, and what it means. Shown after the step passes. */
   saw?: string;
   check: Check;

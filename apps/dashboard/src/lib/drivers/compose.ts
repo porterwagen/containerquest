@@ -1,4 +1,5 @@
 import Docker from "dockerode";
+import nodeProcess from "node:process";
 import type { Replica, QuestEvent } from "@quest/contracts";
 
 /**
@@ -16,12 +17,41 @@ import type { Replica, QuestEvent } from "@quest/contracts";
  * orchestrator actually adds.
  */
 
-const PROJECT = process.env.COMPOSE_PROJECT_NAME || "container-quest";
+// Use node:process, not the free `process` global. Next's bundler replaces
+// process.env.FOO with build-time values (undefined in Docker builds), which
+// made DOCKER_HOST look empty at runtime even when compose set it correctly.
+function env(name: string): string | undefined {
+  return nodeProcess.env[name];
+}
+
+const PROJECT = env("COMPOSE_PROJECT_NAME") || "container-quest";
 
 let docker: Docker | null = null;
+let lastPingOk: boolean | null = null;
+let lastPingAt = 0;
 
+/**
+ * Whether Docker control is *configured* (proxy or socket intended).
+ * Use `dockerReachable()` when you need a live ping.
+ */
 export function dockerAvailable(): boolean {
-  return process.env.QUEST_ALLOW_DOCKER_SOCKET === "1";
+  return env("QUEST_ALLOW_DOCKER_SOCKET") === "1" || Boolean(env("DOCKER_HOST"));
+}
+
+/** Live check against the socket proxy / daemon (cached ~5s). */
+export async function dockerReachable(): Promise<boolean> {
+  // Always attempt a ping when DOCKER_HOST or allow flag might be set; do not
+  // short-circuit only on dockerAvailable() so a mis-detected flag still works.
+  const now = Date.now();
+  if (lastPingOk !== null && now - lastPingAt < 5_000) return lastPingOk;
+  try {
+    await client().ping();
+    lastPingOk = true;
+  } catch {
+    lastPingOk = false;
+  }
+  lastPingAt = now;
+  return lastPingOk;
 }
 
 function client(): Docker {
@@ -30,10 +60,15 @@ function client(): Docker {
   // DOCKER_HOST points at the proxy (tcp://socket-proxy:2375). Falling back to
   // the socket path keeps `npm run dev` on a laptop working, where the socket
   // is reachable as your own user anyway.
-  const host = process.env.DOCKER_HOST;
+  const host = env("DOCKER_HOST");
   if (host?.startsWith("tcp://")) {
     const url = new URL(host);
-    docker = new Docker({ host: url.hostname, port: Number(url.port || 2375) });
+    docker = new Docker({
+      host: url.hostname,
+      port: Number(url.port || 2375),
+      // Protocol for dockerode over plain HTTP to the proxy
+      protocol: "http",
+    });
   } else {
     docker = new Docker({ socketPath: "/var/run/docker.sock" });
   }
@@ -257,6 +292,25 @@ export async function subscribeDockerEvents(
             message: "container started",
             replicaId: id,
           });
+          onEvent({ type: "replica.phase", at, service, id, phase: "Starting" });
+          void client()
+            .getContainer(evt.Actor?.ID ?? "")
+            .inspect()
+            .then((info) => {
+              const restarts = Number(info.RestartCount ?? 0);
+              if (restarts > 0) {
+                onEvent({
+                  type: "replica.restarted",
+                  at: Date.now(),
+                  service,
+                  id,
+                  restarts,
+                });
+              }
+            })
+            .catch(() => {
+              /* The next observation poll will recover if inspect races removal. */
+            });
           break;
         case "health_status: healthy":
           onEvent({ type: "replica.phase", at, service, id, phase: "Ready" });

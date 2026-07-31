@@ -39,7 +39,7 @@ const SERVICES: SimService[] = [
   { id: "util", desired: 2, version: "1.0.0", baseLatency: 6, calls: ["ai", "compute"] },
   { id: "worker", desired: 2, version: "1.0.0", baseLatency: 9, calls: ["ai"] },
   { id: "ai", desired: 2, version: "1.0.0", baseLatency: 42, calls: [] },
-  { id: "compute", desired: 1, version: "1.0.0", baseLatency: 2, calls: [] },
+  { id: "compute", desired: 2, version: "1.0.0", baseLatency: 2, calls: [] },
 ];
 
 let seq = 0;
@@ -128,13 +128,6 @@ export class SimDriver {
       }, 400),
     );
 
-    // Ambient traffic, so the topology is never dead on arrival.
-    this.timers.push(
-      setInterval(() => {
-        this.fireTrace();
-      }, 700),
-    );
-
     // Queue drains proportionally to ready workers — the scaling lesson.
     this.timers.push(
       setInterval(() => {
@@ -203,8 +196,6 @@ export class SimDriver {
     hop("dashboard", "util", 0);
     hop("util", "ai", 120);
     hop("util", "compute", 140);
-    if (Math.random() > 0.5) hop("dashboard", "compute", 40);
-    if (Math.random() > 0.7) hop("worker", "ai", 200);
     void at;
   }
 

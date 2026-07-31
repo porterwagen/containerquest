@@ -39,6 +39,11 @@ export const CHAPTER_1: Lesson[] = [
       {
         instruction:
           "Talk to the C compute service. It answers questions about itself over HTTP.",
+        dashboard: {
+          view: "overview",
+          focus: "compute",
+          label: "Open Compute on Overview",
+        },
         command: "curl -s localhost:9000/meta",
         commandParts: [
           { piece: "curl -s", meaning: "HTTP request; -s = silent" },
@@ -161,7 +166,12 @@ export const CHAPTER_1: Lesson[] = [
       },
       {
         instruction:
-          "Restart the service and check whether your file survived. This prints a plain answer either way.",
+          "Open the identity experiment, then restart the service and check whether your file survived. This prints a plain answer either way.",
+        dashboard: {
+          view: "experiment",
+          experiment: "restart-vs-replace",
+          label: "Open identity experiment",
+        },
         command:
           "docker restart container-quest-ai-1 && sleep 4 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
         commandParts: [
@@ -176,6 +186,11 @@ export const CHAPTER_1: Lesson[] = [
       {
         instruction:
           "Now destroy the container completely and build a replacement from the template. This one command moves into the project folder first, so it works from anywhere.",
+        dashboard: {
+          view: "experiment",
+          experiment: "restart-vs-replace",
+          label: "Return to identity experiment",
+        },
         command:
           "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --force-recreate ai && sleep 6 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
         commandParts: [

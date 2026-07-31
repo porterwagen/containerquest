@@ -14,6 +14,7 @@ import type { QuestEvent, Replica } from "@quest/contracts";
 
 export interface TraceEdge {
   key: string;
+  traceId: string;
   from: string;
   to: string;
   ms: number;
@@ -72,6 +73,10 @@ function reduce(state: FleetState, action: Action): FleetState {
   switch (e.type) {
     case "snapshot":
       next.replicas = e.replicas;
+      next.restarts = e.replicas.reduce<Record<string, number>>((counts, replica) => {
+        counts[replica.service] = Math.max(counts[replica.service] ?? 0, replica.restarts);
+        return counts;
+      }, {});
       return next;
 
     case "replica.added":
@@ -100,6 +105,7 @@ function reduce(state: FleetState, action: Action): FleetState {
         ...state.edges.slice(-(EDGE_WINDOW - 1)),
         {
           key: `${e.traceId}-${e.from}-${e.to}-${e.at}-${Math.random().toString(36).slice(2, 6)}`,
+          traceId: e.traceId,
           from: e.from,
           to: e.to,
           ms: e.ms,

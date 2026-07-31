@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import nodeProcess from "node:process";
 import { byId, newTraceId, TRACE_HEADER, type Span } from "@quest/contracts";
-import { restart, scale, dockerAvailable } from "@/lib/drivers/compose";
+import {
+  restart,
+  scale,
+  listReplicas,
+  dockerAvailable,
+  dockerReachable,
+} from "@/lib/drivers/compose";
 import { recordSpan } from "@/lib/spans";
 
 export const runtime = "nodejs";
@@ -18,7 +25,7 @@ export const dynamic = "force-dynamic";
 function serviceUrl(id: string): string | null {
   const def = byId(id);
   if (!def) return null;
-  return process.env.QUEST_IN_CONTAINER === "1"
+  return nodeProcess.env.QUEST_IN_CONTAINER === "1"
     ? `http://${def.id}:${def.port}`
     : `http://localhost:${def.hostPort}`;
 }
@@ -46,34 +53,99 @@ export async function POST(request: Request) {
           body: JSON.stringify({ action: value ?? "crash", durationMs: 15_000 }),
           signal: AbortSignal.timeout(3_000),
         });
+        if (!res.ok) {
+          return NextResponse.json(
+            { error: `${service ?? "service"} rejected ${String(value ?? "crash")} with HTTP ${res.status}` },
+            { status: 502 },
+          );
+        }
         return NextResponse.json({ ok: true, status: res.status });
       }
 
+      case "observe": {
+        const id = service ?? "";
+        const url = serviceUrl(id);
+        if (!url) return NextResponse.json({ error: "unknown service" }, { status: 400 });
+
+        const headers = { "x-quest-probe": "1" };
+        const [metaRes, liveRes, readyRes] = await Promise.all([
+          fetch(`${url}/meta`, { cache: "no-store", headers, signal: AbortSignal.timeout(2_500) }).catch(() => null),
+          fetch(`${url}/healthz`, { cache: "no-store", headers, signal: AbortSignal.timeout(2_500) }).catch(() => null),
+          fetch(`${url}/readyz`, { cache: "no-store", headers, signal: AbortSignal.timeout(2_500) }).catch(() => null),
+        ]);
+        const meta = metaRes?.ok ? await metaRes.json().catch(() => null) : null;
+        const replicas = (await dockerReachable())
+          ? await listReplicas().catch(() => [])
+          : [];
+        const replica = replicas.find((candidate) => candidate.service === id && candidate.phase !== "Gone");
+        const liveness = liveRes?.status ?? 0;
+        const readiness = readyRes?.status ?? 0;
+
+        return NextResponse.json({
+          service: id,
+          identity: meta?.hostname ?? replica?.id ?? "unknown",
+          uptimeSec: Number(meta?.uptimeSec ?? 0),
+          restarts: Number(replica?.restarts ?? 0),
+          liveness,
+          readiness,
+          status: liveness !== 200 ? "down" : readiness === 200 ? "ready" : "unready",
+        });
+      }
+
       case "restart": {
-        if (!dockerAvailable()) {
+        if (!(await dockerReachable())) {
           return NextResponse.json(
-            { error: "Docker socket not mounted. Set QUEST_ALLOW_DOCKER_SOCKET=1." },
+            {
+              error:
+                "Docker control plane unreachable. Dashboard should use DOCKER_HOST=tcp://socket-proxy:2375 (Compose) or a local socket for npm run dev.",
+            },
             { status: 503 },
           );
         }
         await restart(service ?? "");
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, action: "restart", service: service ?? "" });
       }
 
       case "scale": {
+        // Always errors in Compose by design — return a clear capability message.
         await scale(service ?? "", Number(value ?? 1));
         return NextResponse.json({ ok: true });
       }
 
       case "enqueue": {
         const url = serviceUrl("worker");
+        // sleep jobs stay visible on the Lab counters; hash drains too fast to teach.
         const res = await fetch(`${url}/enqueue`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ count: Number(value ?? 200), kind: "hash" }),
-          signal: AbortSignal.timeout(5_000),
+          body: JSON.stringify({
+            count: Number(value ?? 200),
+            kind: "sleep",
+            // Slow enough that Lab's big WAITING number stays up for ~15–20s
+            // with default worker concurrency 2.
+            ms: 400,
+          }),
+          signal: AbortSignal.timeout(10_000),
         });
         return NextResponse.json(await res.json(), { status: res.status });
+      }
+
+      case "capabilities": {
+        const questMode = nodeProcess.env.QUEST_MODE ?? "compose";
+        const docker = await dockerReachable();
+        return NextResponse.json({
+          mode: questMode,
+          docker,
+          dockerConfigured: docker || dockerAvailable(),
+          // Live Kubernetes control is not implemented yet. Do not advertise an
+          // environment label as if it were an operational driver.
+          scale: false,
+          rollout: false,
+          restart: docker,
+          chaos: true,
+          enqueue: true,
+          traffic: true,
+        });
       }
 
       case "traffic":
@@ -96,16 +168,18 @@ export async function POST(request: Request) {
  * draws itself from what actually happened rather than from a hardcoded list
  * of edges.
  */
-async function generateTraffic(count: number): Promise<{ traces: number; spans: number }> {
+async function generateTraffic(count: number): Promise<{
+  traces: number;
+  spans: number;
+  hops: Array<{ from: string; to: string; ms: number; status: number }>;
+}> {
   const utilUrl = serviceUrl("util");
-  const computeUrl = serviceUrl("compute");
-  let spans = 0;
+  const hops: Array<{ from: string; to: string; ms: number; status: number }> = [];
 
   const runs = Array.from({ length: Math.min(count, 40) }, async () => {
     const traceId = newTraceId();
 
-    // Hop 1: dashboard → util. /aggregate makes util fan out to ai + compute,
-    // and those two spans are recorded by util itself.
+    // Hop 1: dashboard → util. /aggregate makes util fan out to ai + compute.
     const t0 = Date.now();
     try {
       const res = await fetch(`${utilUrl}/aggregate`, {
@@ -113,32 +187,18 @@ async function generateTraffic(count: number): Promise<{ traces: number; spans: 
         signal: AbortSignal.timeout(6_000),
         cache: "no-store",
       });
-      recordSpan(span(traceId, "dashboard", "util", t0, res.status));
-      spans++;
+      const s = span(traceId, "dashboard", "util", t0, res.status);
+      recordSpan(s);
+      hops.push({ from: s.from, to: s.to, ms: s.ms, status: s.status });
     } catch {
-      recordSpan(span(traceId, "dashboard", "util", t0, 0));
-      spans++;
-    }
-
-    // Hop 2: dashboard → compute directly, so the C service shows a direct
-    // edge as well as the one it gets via util.
-    const t1 = Date.now();
-    try {
-      const res = await fetch(`${computeUrl}/mandelbrot`, {
-        headers: { [TRACE_HEADER]: traceId },
-        signal: AbortSignal.timeout(6_000),
-        cache: "no-store",
-      });
-      recordSpan(span(traceId, "dashboard", "compute", t1, res.status));
-      spans++;
-    } catch {
-      recordSpan(span(traceId, "dashboard", "compute", t1, 0));
-      spans++;
+      const s = span(traceId, "dashboard", "util", t0, 0);
+      recordSpan(s);
+      hops.push({ from: s.from, to: s.to, ms: s.ms, status: s.status });
     }
   });
 
   await Promise.all(runs);
-  return { traces: runs.length, spans };
+  return { traces: runs.length, spans: hops.length, hops: hops.slice(0, 24) };
 }
 
 function span(traceId: string, from: string, to: string, started: number, status: number): Span {

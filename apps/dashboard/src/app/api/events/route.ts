@@ -1,5 +1,10 @@
 import type { QuestEvent } from "@quest/contracts";
-import { listReplicas, subscribeDockerEvents, dockerAvailable } from "@/lib/drivers/compose";
+import {
+  listReplicas,
+  subscribeDockerEvents,
+  dockerAvailable,
+  dockerReachable,
+} from "@/lib/drivers/compose";
 import { newReader, readSpans } from "@/lib/spans";
 
 // teach: This route must run on the Node runtime, not Edge — it opens a unix
@@ -48,7 +53,8 @@ export async function GET(request: Request) {
       abort.signal.addEventListener("abort", close);
 
       // 1. Snapshot first, so a browser joining late is never out of sync.
-      if (dockerAvailable()) {
+      const dockerOk = await dockerReachable();
+      if (dockerOk) {
         try {
           send({ type: "snapshot", at: Date.now(), replicas: await listReplicas() });
         } catch (err) {
@@ -62,7 +68,7 @@ export async function GET(request: Request) {
           });
         }
 
-        // 2. Live container lifecycle, pushed by the daemon.
+        // 2. Live container lifecycle via socket proxy.
         subscribeDockerEvents(send, abort.signal).catch((err) =>
           send({
             type: "log",
@@ -79,8 +85,9 @@ export async function GET(request: Request) {
           at: Date.now(),
           service: "dashboard",
           level: "warn",
-          message:
-            "Docker socket not mounted, so container lifecycle is hidden. Set QUEST_ALLOW_DOCKER_SOCKET=1.",
+          message: dockerAvailable()
+            ? "Docker control plane configured but unreachable (check DOCKER_HOST / socket-proxy)."
+            : "Docker control not configured. Set QUEST_ALLOW_DOCKER_SOCKET=1 and DOCKER_HOST for Compose.",
           replicaId: null,
         });
       }

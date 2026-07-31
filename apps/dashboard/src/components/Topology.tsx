@@ -57,11 +57,21 @@ export function Topology({
   fleet,
   onGenerate,
   generating = false,
+  actionDisabled = false,
+  buttonLabel = "Generate traffic",
+  title = "Live request flow",
+  subtitle = "Every particle is one real HTTP call, reconstructed from trace spans.",
+  emptyHint = "System quiet: generate traffic to see paths.",
 }: {
   edges: TraceEdge[];
   fleet: FleetEntry[];
   onGenerate?: () => void;
   generating?: boolean;
+  actionDisabled?: boolean;
+  buttonLabel?: string;
+  title?: string;
+  subtitle?: string;
+  emptyHint?: string;
 }) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [now, setNow] = useState(() => Date.now());
@@ -133,19 +143,17 @@ export function Topology({
     <section className="overflow-hidden rounded-xl border border-edge bg-panel">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-5 py-3.5">
         <div>
-          <h2 className="text-[14px] font-medium text-ink">Live request flow</h2>
-          <p className="mt-0.5 text-[12px] text-ink-faint">
-            Every particle is one real HTTP call, reconstructed from trace spans.
-          </p>
+          <h2 className="text-[14px] font-medium text-ink">{title}</h2>
+          <p className="mt-0.5 text-[12px] text-ink-faint">{subtitle}</p>
         </div>
         <div className="flex items-center gap-3">
           {onGenerate && (
             <button
               onClick={onGenerate}
-              disabled={generating}
+              disabled={generating || actionDisabled}
               className="rounded-md border border-edge bg-panel-2 px-2.5 py-1.5 font-mono text-[11px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink disabled:opacity-40"
             >
-              {generating ? "…" : "Generate traffic"}
+              {generating ? "…" : buttonLabel}
             </button>
           )}
           <span className="font-mono text-[10px] text-ink-faint">
@@ -153,6 +161,12 @@ export function Topology({
           </span>
         </div>
       </header>
+
+      {idle && (
+        <div className="border-b border-edge bg-panel-2 px-5 py-2.5 text-[12px] text-ink-faint">
+          {emptyHint}
+        </div>
+      )}
 
       {/* Fixed height rather than an aspect ratio: on a wide screen 16:9 left
           a screenful of empty canvas below the graph. */}

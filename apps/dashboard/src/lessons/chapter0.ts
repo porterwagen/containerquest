@@ -1015,7 +1015,11 @@ cat ~/quest-hello/Dockerfile`,
       },
       {
         instruction:
-          "Ask the Go service to report on its neighbors. It calls the Python and C services and collects their answers.",
+          "Open Request Path in another tab, then ask the Go service to report on its neighbors. Keep the dashboard open while the command runs so it can capture the fan-out.",
+        dashboard: {
+          view: "request-path",
+          label: "Open Request Path",
+        },
         command: "curl -s localhost:8080/aggregate",
         commandParts: [
           { piece: "curl -s", meaning: "HTTP request; -s = silent (no progress meter)" },
@@ -1026,9 +1030,14 @@ cat ~/quest-hello/Dockerfile`,
       },
       {
         instruction:
-          "Now switch to the Dashboard tab at the top of this page and look at the cards, then come back.",
-        saw: "Those cards are the same information you just fetched by hand, refreshed continuously. For now most of the numbers won't mean much. That's fine and expected. Each lesson explains one more of them.",
-        check: { kind: "manual", label: "I looked at the Dashboard" },
+          "Open Overview. Confirm the five application service cards look ready, then find the request counts that moved when util called its neighbors.",
+        dashboard: {
+          view: "overview",
+          focus: "util",
+          label: "Open Overview",
+        },
+        saw: "Overview is the fleet scoreboard. It shows the five application services; PostgreSQL, Redis, and the socket proxy complete the eight-container Compose project but are infrastructure rather than application cards.",
+        check: { kind: "manual", label: "I checked Overview" },
       },
     ],
     recap: [

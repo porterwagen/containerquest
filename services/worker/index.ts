@@ -190,16 +190,28 @@ const server = http.createServer(async (req, res) => {
 
   if (path === "/enqueue" && req.method === "POST") {
     const body = await readBody(req);
-    const { count = 10, kind = "hash" } = body ? JSON.parse(body) : {};
-    // 60k rounds lands around 30-40ms per job. Deliberately slow enough that
-    // queue depth is visible on a chart and scaling replicas has an obvious,
-    // measurable effect — a job that finishes in 1ms teaches nothing.
-    const jobs = Array.from({ length: Math.min(Number(count), 5_000) }, (_, i) => ({
-      name: kind as string,
-      data: { kind, input: `payload-${Date.now()}-${i}`, rounds: 60_000, ms: 250 } as JobPayload,
-    }));
+    const parsed = body ? JSON.parse(body) : {};
+    const count = Math.min(Number(parsed.count ?? 10), 5_000);
+    const kind = (parsed.kind ?? "hash") as JobPayload["kind"];
+    // sleep: wall-clock wait so Lab "Queue 200" stays visible on counters.
+    // hash: CPU work (~30-40ms at 60k rounds) for scaling demos.
+    const ms = Number(parsed.ms ?? 200);
+    const rounds = Number(parsed.rounds ?? 60_000);
+    const jobs = Array.from({ length: count }, (_, i) => {
+      const input = `payload-${Date.now()}-${i}`;
+      if (kind === "sleep") {
+        return { name: "sleep", data: { kind: "sleep" as const, ms, input } };
+      }
+      if (kind === "embed") {
+        return { name: "embed", data: { kind: "embed" as const, input } };
+      }
+      return {
+        name: "hash",
+        data: { kind: "hash" as const, input, rounds, ms },
+      };
+    });
     await queue.addBulk(jobs);
-    return json(res, 200, { ok: true, enqueued: jobs.length });
+    return json(res, 200, { ok: true, enqueued: jobs.length, kind, ms: kind === "sleep" ? ms : undefined });
   }
 
   if (path === "/chaos" && req.method === "POST") {

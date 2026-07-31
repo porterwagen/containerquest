@@ -131,7 +131,12 @@ export const CHAPTER_5: Lesson[] = [
     ],
     steps: [
       {
-        instruction: "Note the current pods and their names.",
+        instruction: "Open the pod replacement experiment, then note the current pods and their names.",
+        dashboard: {
+          view: "experiment",
+          experiment: "k8s-selfheal",
+          label: "Open pod replacement",
+        },
         command: "kubectl get pods -n container-quest -l app=compute",
         commandParts: [
           { piece: "kubectl get pods -l app=compute", meaning: "Only pods labeled as compute" },
@@ -182,7 +187,12 @@ export const CHAPTER_5: Lesson[] = [
     ],
     steps: [
       {
-        instruction: "Scale from two copies to five, with one command.",
+        instruction: "Open the scaling experiment, then scale from two copies to five with one command.",
+        dashboard: {
+          view: "experiment",
+          experiment: "k8s-scaling",
+          label: "Open scaling experiment",
+        },
         command: "kubectl scale deployment compute -n container-quest --replicas=5",
         commandParts: [
           { piece: "kubectl scale deployment compute", meaning: "Change desired replica count" },
@@ -246,6 +256,11 @@ export const CHAPTER_5: Lesson[] = [
       {
         instruction:
           "Trigger an update by changing the version the pods report. This changes the declaration, so every pod must be replaced.",
+        dashboard: {
+          view: "experiment",
+          experiment: "k8s-rollout",
+          label: "Open rolling update",
+        },
         command:
           "kubectl set env deployment/compute -n container-quest SERVICE_VERSION=2.0.0",
         commandParts: [

@@ -87,7 +87,12 @@ export const CHAPTER_4: Lesson[] = [
     ],
     steps: [
       {
-        instruction: "Check how many times the Python service has restarted so far.",
+        instruction: "Open Crash recovery in another tab, then check how many times the Python service has restarted so far.",
+        dashboard: {
+          view: "experiment",
+          experiment: "crash-recovery",
+          label: "Open Crash recovery",
+        },
         command: "docker inspect container-quest-ai-1 --format 'restarts: {{.RestartCount}}'",
         commandParts: [
           { piece: "docker inspect --format", meaning: "Read one field of container metadata" },
@@ -98,14 +103,14 @@ export const CHAPTER_4: Lesson[] = [
       },
       {
         instruction:
-          "Now make it crash on purpose. This asks the service to kill its own process, exactly as a real crash would.",
+          "Now make it crash on purpose. This asks the service to kill its own process, exactly as a real crash would. Keep Crash recovery visible so it can compare before and after.",
         command:
           "curl -s -XPOST localhost:8000/chaos -H 'content-type: application/json' -d '{\"action\":\"crash\"}'",
         commandParts: [
           { piece: "curl -s -XPOST .../chaos", meaning: "Ask the service to crash itself (teaching endpoint)" },
           { piece: "-d '{\"action\":\"crash\"}'", meaning: "JSON body selecting the crash action" },
         ],
-        saw: "The service acknowledged, then killed itself. Nothing you did stopped the container: the program inside exited on its own, which is how real crashes happen.",
+        saw: "The service acknowledged, then killed itself. Nothing you did stopped the container: the program inside exited on its own, which is how real crashes happen. On Overview, uptime for ai should reset within a few seconds.",
         check: { kind: "restarted", service: "ai" },
       },
       {
@@ -143,14 +148,19 @@ export const CHAPTER_4: Lesson[] = [
     steps: [
       {
         instruction:
-          "Make the Go service report itself NOT READY, while leaving the process completely healthy.",
+          "Open the readiness experiment, then make the Go service report itself NOT READY while leaving the process completely healthy.",
+        dashboard: {
+          view: "experiment",
+          experiment: "readiness",
+          label: "Open readiness experiment",
+        },
         command:
           "curl -s -XPOST localhost:8080/chaos -H 'content-type: application/json' -d '{\"action\":\"unready\"}'",
         commandParts: [
           { piece: "curl -XPOST .../chaos", meaning: "Teaching endpoint again" },
           { piece: "action: unready", meaning: "Fail readiness while the process stays alive" },
         ],
-        saw: "It accepted. The program is running perfectly and is now declining traffic. On the Dashboard, its card just turned amber rather than red.",
+        saw: "It accepted. The program is running perfectly and is now declining traffic. On Overview, the util card should turn amber rather than red. The readiness experiment records the same identity and uninterrupted uptime before and after.",
         check: { kind: "unready", service: "util" },
       },
       {
@@ -208,6 +218,11 @@ export const CHAPTER_4: Lesson[] = [
       {
         instruction:
           "Ask Compose for three copies of the worker, which publishes a fixed port.",
+        dashboard: {
+          view: "experiment",
+          experiment: "compose-limits",
+          label: "Open the Compose capability note",
+        },
         command:
           "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=3 2>&1 | tail -4",
         commandParts: [

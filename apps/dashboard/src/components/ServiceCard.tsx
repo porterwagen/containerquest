@@ -29,15 +29,28 @@ function uptime(sec: number): string {
   return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
 }
 
-export function ServiceCard({ entry, index }: { entry: FleetEntry; index: number }) {
+export function ServiceCard({
+  entry,
+  index,
+  highlight = false,
+}: {
+  entry: FleetEntry;
+  index: number;
+  /** Briefly emphasize after a Lab action on this service. */
+  highlight?: boolean;
+}) {
   const { def, meta, status, latencyMs, error } = entry;
   const s = STATUS[status];
   const lang = LANG_COLOR[def.language] ?? LANG_COLOR.infra;
 
   return (
     <article
-      className="fade-up relative overflow-hidden rounded-xl border border-edge bg-panel p-4 transition-colors hover:border-edge-bright"
-      style={{ animationDelay: `${index * 55}ms` }}
+      className="fade-up relative overflow-hidden rounded-xl border bg-panel p-4 transition-colors hover:border-edge-bright"
+      style={{
+        animationDelay: `${index * 55}ms`,
+        borderColor: highlight ? "var(--color-beam)" : "var(--color-edge)",
+        boxShadow: highlight ? "0 0 0 1px color-mix(in oklab, var(--color-beam) 45%, transparent)" : undefined,
+      }}
     >
       {/* Language stripe — the same color follows this service everywhere. */}
       <div className="absolute inset-x-0 top-0 h-px" style={{ background: lang, opacity: 0.55 }} />
@@ -76,11 +89,11 @@ export function ServiceCard({ entry, index }: { entry: FleetEntry; index: number
               (recreated, or rescheduled as a new pod). Watching which of those
               two happened is how you tell a restart from a reschedule. */}
           <Stat label="container" value={meta.hostname} mono />
-          <Stat label="pod" value={meta.podName ?? "— (docker)"} mono />
+          <Stat label="pod" value={meta.podName ?? "none (Docker)"} mono />
           <Stat label="version" value={`v${meta.version}`} mono />
           <Stat label="uptime" value={uptime(meta.uptimeSec)} mono />
           <Stat label="requests" value={meta.requests.toLocaleString()} mono />
-          <Stat label="pid / rtt" value={`${meta.pid} · ${latencyMs ?? "—"}ms`} mono />
+          <Stat label="pid / rtt" value={`${meta.pid} · ${latencyMs ?? "n/a"}ms`} mono />
         </div>
       ) : (
         <div className="mt-3.5 border-t border-edge pt-3">

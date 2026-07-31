@@ -32,7 +32,7 @@ export function Timeline({ logs, mode = "live" }: { logs: LogLine[]; mode?: "liv
       <div className="min-h-0 flex-1 overflow-y-auto">
         {logs.length === 0 ? (
           <p className="px-5 py-6 text-center text-[11.5px] text-ink-faint">
-            Nothing yet. Crash something in the Lab and watch it appear here.
+            Nothing captured yet. Run the lesson action and watch the lifecycle appear here.
           </p>
         ) : (
           <ul className="divide-y divide-edge/60">

@@ -181,7 +181,7 @@ function Sidebar({
                     )}
                     <button
                       onClick={() => onSelect(l.id)}
-                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+                      className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
                         isCurrent
                           ? "bg-panel-2 text-ink"
                           : "text-ink-faint hover:bg-panel hover:text-ink-dim"
@@ -413,6 +413,15 @@ function StepCard({
   const [copied, setCopied] = useState(false);
   const recording = getRecording(lessonId, stepIndex);
   const isDemo = mode === "demo";
+  const dashboardHref = step.dashboard
+    ? `/dashboard?${new URLSearchParams({
+        view: step.dashboard.view,
+        lesson: lessonId,
+        step: String(stepIndex + 1),
+        ...(step.dashboard.experiment ? { experiment: step.dashboard.experiment } : {}),
+        ...(step.dashboard.focus ? { focus: step.dashboard.focus } : {}),
+      }).toString()}`
+    : null;
 
   async function copy() {
     if (!step.command) return;
@@ -443,6 +452,16 @@ function StepCard({
 
         <div className="min-w-0 flex-1">
           <p className="text-[14.5px] leading-relaxed text-ink">{step.instruction}</p>
+
+          {dashboardHref && step.dashboard && (
+            <Link
+              href={dashboardHref}
+              target="_blank"
+              className="mt-2.5 inline-flex items-center rounded-md border border-beam/50 bg-beam/5 px-3 py-1.5 text-[12px] text-beam transition-colors hover:bg-beam/10"
+            >
+              {step.dashboard.label} ↗
+            </Link>
+          )}
 
           {/* File-writing steps: show tree + contents first so printf one-liners
               are not the only way to understand what is being created. */}

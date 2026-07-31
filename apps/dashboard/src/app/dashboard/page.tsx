@@ -22,15 +22,14 @@ export default async function DashboardPage() {
         {demo ? (
           <>
             <span className="text-beam">Simulated. </span>
-            This is the real dashboard, driven by a model running in your browser instead of by
-            real containers: the same interface the live version uses. The controls genuinely
-            work: crash a pod, scale a deployment, run a rolling deploy, and watch it respond.
+            Overview is always the scoreboard. Experiments appear only when the matching lesson is
+            current or complete, and Kubernetes experiments use the in-browser simulator.
           </>
         ) : (
           <>
-            This is the instrument panel: live readings from the eight containers running on your
-            machine. If a number here doesn&apos;t mean anything to you yet, that&apos;s expected.
-            The lessons explain each one as you reach it.
+            <span className="text-beam">Overview </span>
+            is always the fleet scoreboard. Named experiments unlock from the lessons that use
+            them, so every action has a before, an after, and one conclusion.
           </>
         )}
       </p>
