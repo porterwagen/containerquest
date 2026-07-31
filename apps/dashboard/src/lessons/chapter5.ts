@@ -1,4 +1,5 @@
 import type { Lesson } from "./types.ts";
+import { experienceCommand } from "@/lib/dashboardExperiments";
 
 /**
  * Chapter 5  -  Kubernetes.
@@ -148,8 +149,7 @@ export const CHAPTER_5: Lesson[] = [
       {
         instruction:
           "Delete one. This destroys it outright: no warning to the program, nothing graceful.",
-        command:
-          "kubectl delete pod -n container-quest $(kubectl get pods -n container-quest -l app=compute -o jsonpath='{.items[0].metadata.name}')",
+        command: experienceCommand("k8s-selfheal", "action"),
         commandParts: [
           { piece: "kubectl delete pod ...", meaning: "Kill one compute pod on purpose" },
           { piece: "$(kubectl get pods ... jsonpath=...)", meaning: "Pick a current pod name dynamically" },
@@ -193,7 +193,7 @@ export const CHAPTER_5: Lesson[] = [
           experiment: "k8s-scaling",
           label: "Open scaling experiment",
         },
-        command: "kubectl scale deployment compute -n container-quest --replicas=5",
+        command: experienceCommand("k8s-scaling", "action"),
         commandParts: [
           { piece: "kubectl scale deployment compute", meaning: "Change desired replica count" },
           { piece: "--replicas=5", meaning: "Ask for five copies" },
@@ -225,7 +225,7 @@ export const CHAPTER_5: Lesson[] = [
       },
       {
         instruction: "Scale back down to two.",
-        command: "kubectl scale deployment compute -n container-quest --replicas=2",
+        command: experienceCommand("k8s-scaling", "reset"),
         commandParts: [
           { piece: "kubectl scale ... --replicas=2", meaning: "Scale back down to two" },
         ],
@@ -261,8 +261,7 @@ export const CHAPTER_5: Lesson[] = [
           experiment: "k8s-rollout",
           label: "Open rolling update",
         },
-        command:
-          "kubectl set env deployment/compute -n container-quest SERVICE_VERSION=2.0.0",
+        command: experienceCommand("k8s-rollout", "action"),
         commandParts: [
           { piece: "kubectl set env deployment/compute", meaning: "Change env on the pod template" },
           { piece: "SERVICE_VERSION=2.0.0", meaning: "Triggers a rolling update to a new 'version'" },
@@ -294,7 +293,7 @@ export const CHAPTER_5: Lesson[] = [
       {
         instruction:
           "One more thing worth knowing: Kubernetes keeps the previous version, so undoing a bad deploy is one command.",
-        command: "kubectl rollout undo deployment/compute -n container-quest",
+        command: experienceCommand("k8s-rollout", "reset"),
         commandParts: [
           { piece: "kubectl rollout undo deployment/compute", meaning: "Roll back to the previous ReplicaSet" },
         ],

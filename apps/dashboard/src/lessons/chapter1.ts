@@ -1,4 +1,5 @@
 import type { Lesson } from "./types.ts";
+import { experienceCommand } from "@/lib/dashboardExperiments";
 
 /**
  * Chapter 1 - What a container actually is.
@@ -154,8 +155,7 @@ export const CHAPTER_1: Lesson[] = [
     steps: [
       {
         instruction: "Write a file inside the running AI service.",
-        command:
-          "docker exec container-quest-ai-1 sh -c 'echo \"I was here\" > /tmp/note.txt && cat /tmp/note.txt'",
+        command: experienceCommand("restart-vs-replace", "setup"),
         commandParts: [
           { piece: "docker exec", meaning: "Run a command in a running container" },
           { piece: "sh -c '...'", meaning: "Shell so we can write a file and print it in one go" },
@@ -172,8 +172,7 @@ export const CHAPTER_1: Lesson[] = [
           experiment: "restart-vs-replace",
           label: "Open identity experiment",
         },
-        command:
-          "docker restart container-quest-ai-1 && sleep 4 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
+        command: experienceCommand("restart-vs-replace", "restart"),
         commandParts: [
           { piece: "docker restart ...", meaning: "Stop and start the same container (keeps its filesystem)" },
           { piece: "sleep 4", meaning: "Wait for the service to come back" },
@@ -191,8 +190,7 @@ export const CHAPTER_1: Lesson[] = [
           experiment: "restart-vs-replace",
           label: "Return to identity experiment",
         },
-        command:
-          "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --force-recreate ai && sleep 6 && docker exec container-quest-ai-1 cat /tmp/note.txt 2>/dev/null && echo \"--> STILL THERE\" || echo \"--> GONE\"",
+        command: experienceCommand("restart-vs-replace", "replace"),
         commandParts: [
           { piece: "cd ~/Documents/containerquest", meaning: "Work from the project folder" },
           { piece: "docker compose ... up -d", meaning: "Start/update services in the background" },

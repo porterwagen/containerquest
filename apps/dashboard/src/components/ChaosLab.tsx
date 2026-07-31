@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { Replica } from "@quest/contracts";
-import type { ExperimentDef, ExperimentStatus } from "@/lib/dashboardExperiments";
-import { statusLabel } from "@/lib/dashboardExperiments";
+import type {
+  ExperimentCommand,
+  ExperimentDef,
+  ExperimentStatus,
+} from "@/lib/dashboardExperiments";
+import { experimentLessonHref, statusLabel } from "@/lib/dashboardExperiments";
 import type { FleetEntry } from "@/lib/fleet";
 import type { FleetState } from "@/lib/useEventStream";
 import { control, type Mode } from "@/lib/control";
@@ -56,6 +61,13 @@ export function ExperimentLab({
         <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-ink-faint">
           {experiment.summary}
         </p>
+        <Link
+          href={experimentLessonHref(experiment)}
+          target="_blank"
+          className="mt-3 inline-flex items-center rounded-md border border-edge px-3 py-1.5 text-[12px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+        >
+          Open matching lesson: {experiment.lessonTitle} ↗
+        </Link>
         {status === "upcoming" && (
           <UpcomingBanner lessonTitle={experiment.lessonTitle} mode={mode} />
         )}
@@ -67,7 +79,8 @@ export function ExperimentLab({
         )}
       </header>
 
-      <div className="p-5">
+      <div className="space-y-5 p-5">
+        {mode === "live" && <ExperimentTerminal commands={experiment.commands} />}
         {experiment.kubernetes && mode === "live" ? (
           <KubernetesUnavailable />
         ) : experiment.id === "restart-vs-replace" ? (
@@ -81,6 +94,57 @@ export function ExperimentLab({
         ) : (
           <KubernetesExperiment id={experiment.id} mode={mode} stream={stream} />
         )}
+      </div>
+    </section>
+  );
+}
+
+export function ExperimentTerminal({ commands }: { commands: ExperimentCommand[] }) {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function copy(command: ExperimentCommand) {
+    await navigator.clipboard.writeText(command.command);
+    setCopied(command.key);
+    window.setTimeout(() => setCopied(null), 1_600);
+  }
+
+  return (
+    <section className="rounded-lg border border-edge bg-panel-2 p-3.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-[10px] uppercase tracking-[0.14em] text-beam">
+          Terminal alternative
+        </h3>
+        <span className="text-[11px] text-ink-faint">Same actions as the matching lesson</span>
+      </div>
+      <p className="mt-1.5 max-w-2xl text-[12px] leading-relaxed text-ink-faint">
+        Use these when you want the terminal path. The experiment supplies the live evidence, so
+        observation commands stay in the lesson.
+      </p>
+      <div className="mt-3 space-y-2.5">
+        {commands.map((command) => (
+          <div key={command.key}>
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-[11px] text-ink-dim">{command.label}</span>
+              {command.role === "reset" && (
+                <span className="rounded border border-warn/40 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-warn">
+                  cleanup
+                </span>
+              )}
+            </div>
+            <div className="flex items-stretch gap-2">
+              <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre rounded-md border border-edge bg-void px-3 py-2 font-mono text-[11.5px] leading-relaxed text-beam">
+                {command.command}
+              </code>
+              <button
+                type="button"
+                onClick={() => void copy(command)}
+                className="shrink-0 rounded-md border border-edge px-2.5 font-mono text-[10.5px] text-ink-faint transition-colors hover:border-edge-bright hover:text-ink"
+              >
+                {copied === command.key ? "copied" : "copy"}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

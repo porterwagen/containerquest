@@ -1,4 +1,5 @@
 import type { Lesson } from "./types.ts";
+import { experienceCommand } from "@/lib/dashboardExperiments";
 
 /**
  * Chapter 4  -  When things break.
@@ -104,8 +105,7 @@ export const CHAPTER_4: Lesson[] = [
       {
         instruction:
           "Now make it crash on purpose. This asks the service to kill its own process, exactly as a real crash would. Keep Crash recovery visible so it can compare before and after.",
-        command:
-          "curl -s -XPOST localhost:8000/chaos -H 'content-type: application/json' -d '{\"action\":\"crash\"}'",
+        command: experienceCommand("crash-recovery", "action"),
         commandParts: [
           { piece: "curl -s -XPOST .../chaos", meaning: "Ask the service to crash itself (teaching endpoint)" },
           { piece: "-d '{\"action\":\"crash\"}'", meaning: "JSON body selecting the crash action" },
@@ -154,8 +154,7 @@ export const CHAPTER_4: Lesson[] = [
           experiment: "readiness",
           label: "Open readiness experiment",
         },
-        command:
-          "curl -s -XPOST localhost:8080/chaos -H 'content-type: application/json' -d '{\"action\":\"unready\"}'",
+        command: experienceCommand("readiness", "action"),
         commandParts: [
           { piece: "curl -XPOST .../chaos", meaning: "Teaching endpoint again" },
           { piece: "action: unready", meaning: "Fail readiness while the process stays alive" },
@@ -223,8 +222,7 @@ export const CHAPTER_4: Lesson[] = [
           experiment: "compose-limits",
           label: "Open the Compose capability note",
         },
-        command:
-          "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=3 2>&1 | tail -4",
+        command: experienceCommand("compose-limits", "action"),
         commandParts: [
           { piece: "docker compose ... up -d", meaning: "Apply the compose project" },
           { piece: "--scale worker=N", meaning: "Run N copies of the worker service" },
@@ -234,8 +232,7 @@ export const CHAPTER_4: Lesson[] = [
       },
       {
         instruction: "Put things back to a single worker.",
-        command:
-          "cd ~/Documents/containerquest && docker compose -f infra/compose/docker-compose.yml up -d --scale worker=1 2>&1 | tail -2",
+        command: experienceCommand("compose-limits", "reset"),
         commandParts: [
           { piece: "docker compose ... up -d", meaning: "Apply the compose project" },
           { piece: "--scale worker=N", meaning: "Run N copies of the worker service" },

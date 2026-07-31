@@ -17,6 +17,7 @@ import {
 } from "@/lessons";
 import { Replay, getRecording } from "./Replay";
 import type { Mode } from "@/lib/control";
+import { experienceForLesson } from "@/lib/dashboardExperiments";
 
 /**
  * The course.
@@ -34,6 +35,32 @@ const STORAGE_KEY = "container-quest.progress.v1";
 interface Progress {
   done: string[];
   current: string;
+}
+
+type ExperienceLink = NonNullable<ReturnType<typeof experienceForLesson>>;
+
+interface LessonRoute {
+  lessonId?: string;
+  step?: number;
+  returnExperience?: ExperienceLink;
+}
+
+function readLessonRoute(): LessonRoute {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const lesson = LESSONS.find((candidate) => candidate.id === params.get("lesson"));
+  if (!lesson) return {};
+
+  const requestedStep = Number(params.get("step"));
+  const step =
+    Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= lesson.steps.length
+      ? requestedStep
+      : undefined;
+  const related = experienceForLesson(lesson.id);
+  const returnExperience =
+    related && related.id === params.get("fromExperiment") ? related : undefined;
+
+  return { lessonId: lesson.id, step, returnExperience };
 }
 
 function loadProgress(): Progress {
@@ -57,12 +84,31 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
   // Bumped when clearing a lesson so LessonView remounts (step ticks + probe
   // baseline reset). Keyed with lesson.id so navigation still remounts too.
   const [lessonEpoch, setLessonEpoch] = useState(0);
+  const [returnExperience, setReturnExperience] = useState<ExperienceLink | undefined>();
   const lessonTopRef = useRef<HTMLDivElement>(null);
   const pendingScrollRef = useRef(false);
+  const pendingStepRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setProgress(loadProgress());
+    const applyRoute = (initial: boolean) => {
+      const route = readLessonRoute();
+      pendingScrollRef.current = Boolean(route.lessonId);
+      pendingStepRef.current = route.step ?? null;
+      setReturnExperience(route.returnExperience);
+
+      if (initial) {
+        const saved = loadProgress();
+        setProgress({ ...saved, current: route.lessonId ?? saved.current });
+      } else if (route.lessonId) {
+        setProgress((saved) => ({ ...saved, current: route.lessonId! }));
+      }
+    };
+
+    applyRoute(true);
     setHydrated(true);
+    const onPopState = () => applyRoute(false);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   useEffect(() => {
@@ -85,9 +131,14 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
   // sidebar, Previous, and Next — especially useful on mobile where the
   // accordion collapses and the lesson jumps into view.
   useEffect(() => {
-    if (!pendingScrollRef.current) return;
+    if (!pendingScrollRef.current && pendingStepRef.current === null) return;
     pendingScrollRef.current = false;
-    const el = lessonTopRef.current;
+    const step = pendingStepRef.current;
+    pendingStepRef.current = null;
+    const el =
+      step === null
+        ? lessonTopRef.current
+        : document.getElementById(`lesson-step-${progress.current}-${step}`);
     if (!el) return;
     // Double rAF: wait for LessonView remount + mobile menu collapse layout.
     requestAnimationFrame(() => {
@@ -95,10 +146,17 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
-  }, [progress.current]);
+  }, [hydrated, progress.current]);
 
   const goTo = useCallback((id: string) => {
     pendingScrollRef.current = true;
+    pendingStepRef.current = null;
+    setReturnExperience(undefined);
+    const url = new URL(window.location.href);
+    url.searchParams.set("lesson", id);
+    url.searchParams.delete("step");
+    url.searchParams.delete("fromExperiment");
+    window.history.pushState(null, "", url);
     setProgress((p) => ({ ...p, current: id }));
   }, []);
 
@@ -121,6 +179,13 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
       return;
     }
     pendingScrollRef.current = true;
+    pendingStepRef.current = null;
+    setReturnExperience(undefined);
+    const url = new URL(window.location.href);
+    url.searchParams.set("lesson", LESSONS[0]!.id);
+    url.searchParams.delete("step");
+    url.searchParams.delete("fromExperiment");
+    window.history.pushState(null, "", url);
     setProgress({ done: [], current: LESSONS[0]!.id });
     setLessonEpoch((e) => e + 1);
   }, []);
@@ -145,6 +210,8 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
           mode={mode}
           onComplete={() => complete(lesson.id)}
           onClearLesson={() => clearLesson(lesson.id)}
+          relatedExperience={experienceForLesson(lesson.id)}
+          returnExperience={returnExperience}
         />
 
         <nav className="mt-6 flex items-center justify-between gap-3 border-t border-edge pt-5">
@@ -348,12 +415,16 @@ function LessonView({
   mode,
   onComplete,
   onClearLesson,
+  relatedExperience,
+  returnExperience,
 }: {
   lesson: Lesson;
   done: boolean;
   mode: Mode;
   onComplete: () => void;
   onClearLesson: () => void;
+  relatedExperience?: ExperienceLink;
+  returnExperience?: ExperienceLink;
 }) {
   const [passed, setPassed] = useState<boolean[]>(() => lesson.steps.map(() => false));
   const [manual, setManual] = useState<boolean[]>(() => lesson.steps.map(() => false));
@@ -419,6 +490,15 @@ function LessonView({
         <h1 className="mt-1.5 text-[26px] font-medium leading-tight tracking-tight text-ink">
           {lesson.title}
         </h1>
+        {returnExperience && (
+          <Link
+            href={returnExperience.dashboardHref}
+            target="_blank"
+            className="mt-3 inline-flex items-center rounded-md border border-beam/50 bg-beam/5 px-3 py-1.5 text-[12px] text-beam transition-colors hover:bg-beam/10"
+          >
+            ← Back to {returnExperience.title}
+          </Link>
+        )}
       </header>
 
       <div className="space-y-3.5">
@@ -483,10 +563,12 @@ function LessonView({
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Link
-              href="/dashboard"
+              href={relatedExperience?.dashboardHref ?? "/dashboard"}
               className="inline-block rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
             >
-              See it on the live dashboard →
+              {relatedExperience
+                ? `Practice in ${relatedExperience.title} →`
+                : "See it on the live dashboard →"}
             </Link>
             <button
               type="button"
@@ -573,7 +655,8 @@ function StepCard({
 
   return (
     <section
-      className="rounded-xl border bg-panel transition-colors"
+      id={`lesson-step-${lessonId}-${stepIndex + 1}`}
+      className="scroll-mt-3 rounded-xl border bg-panel transition-colors"
       style={{
         borderColor: passed
           ? "color-mix(in oklab, var(--color-live) 40%, transparent)"

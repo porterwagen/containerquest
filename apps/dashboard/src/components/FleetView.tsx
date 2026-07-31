@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { FleetEntry } from "@/lib/fleet";
 import { useEventStream, type TraceEdge } from "@/lib/useEventStream";
 import { control, fleetFromReplicas, type Mode } from "@/lib/control";
@@ -8,9 +9,11 @@ import {
   DEMO_STARTER_IDS,
   EXPERIMENTS,
   REQUEST_PATH_LESSON,
+  REQUEST_PATH_COMMANDS,
   REQUEST_PATH_LESSON_TITLE,
   experimentById,
   experimentStatus,
+  requestPathLessonHref,
   statusLabel,
   type ExperimentDef,
   type ExperimentId,
@@ -19,7 +22,7 @@ import {
 import { ServiceCard } from "./ServiceCard";
 import { ParityPanel } from "./ParityPanel";
 import { Topology } from "./Topology";
-import { ExperimentLab, UpcomingBanner } from "./ChaosLab";
+import { ExperimentLab, ExperimentTerminal, UpcomingBanner } from "./ChaosLab";
 
 const POLL_MS = 2_000;
 const PROGRESS_KEY = "container-quest.progress.v1";
@@ -265,11 +268,19 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
                 ? "Send one simulated request and watch util fan out to AI and Compute. Same hop structure as the live lesson."
                 : "Keep this view open, then run the lesson's curl command. It records only real HTTP hops, so an idle graph means the system is waiting for the action."}
             </p>
+            <Link
+              href={requestPathLessonHref()}
+              target="_blank"
+              className="mt-3 inline-flex items-center rounded-md border border-edge px-3 py-1.5 text-[12px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+            >
+              Open matching lesson: {REQUEST_PATH_LESSON_TITLE} ↗
+            </Link>
             {requestPathStatus === "upcoming" && (
               <UpcomingBanner lessonTitle={REQUEST_PATH_LESSON_TITLE} mode={mode} />
             )}
             {pathError && <p className="mt-2 font-mono text-[11px] text-dead">{pathError}</p>}
           </section>
+          {mode === "live" && <ExperimentTerminal commands={REQUEST_PATH_COMMANDS} />}
           <Topology
             edges={visibleEdges}
             fleet={fleet}

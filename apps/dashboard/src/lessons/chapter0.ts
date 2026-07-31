@@ -1,4 +1,5 @@
 import type { Lesson } from "./types.ts";
+import { experienceCommand } from "@/lib/dashboardExperiments";
 
 /**
  * Chapter 0 - Getting started.
@@ -1020,7 +1021,7 @@ cat ~/quest-hello/Dockerfile`,
           view: "request-path",
           label: "Open Request Path",
         },
-        command: "curl -s localhost:8080/aggregate",
+        command: experienceCommand("request-path", "action"),
         commandParts: [
           { piece: "curl -s", meaning: "HTTP request; -s = silent (no progress meter)" },
           { piece: "localhost:8080/aggregate", meaning: "Host port published by the util service" },
