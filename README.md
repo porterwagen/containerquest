@@ -47,6 +47,22 @@ npm run dev --workspace @quest/dashboard
 The landing page and lessons render fine this way. The Dashboard view will show
 every service as offline, because nothing is running for it to read.
 
+> **Do not run this at the same time as `make up`.** Both want port 3000, and
+> Docker does not treat that as an error: it publishes the port anyway, so your
+> browser keeps talking to the `npm run dev` process. That process has none of
+> the fleet's configuration — no `REDIS_URL`, no `DOCKER_HOST`, no way to
+> resolve service names — so the dashboard fails in ways that look like
+> application bugs (500s from `/api/control`, an empty Request Path graph)
+> while the eight containers behind it are perfectly healthy.
+>
+> `make up` and `make doctor` both run a preflight check that catches this and
+> tells you which process to stop. To run a dev server alongside the fleet on
+> purpose, give it its own port:
+>
+> ```bash
+> PORT=3002 npm run dev --workspace @quest/dashboard
+> ```
+
 ---
 
 ## Requirements

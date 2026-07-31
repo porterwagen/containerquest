@@ -1025,6 +1025,8 @@ cat ~/quest-hello/Dockerfile`,
           { piece: "curl -s", meaning: "HTTP request; -s = silent (no progress meter)" },
           { piece: "localhost:8080/aggregate", meaning: "Host port published by the util service" },
         ],
+        ifItFails:
+          "If curl returns data but Request Path stays empty, check for an `npm run dev` still running on port 3000 from earlier. Both it and the fleet's dashboard want that port, and Docker publishes 3000 without warning you, so the page you are reading is being served by that older process — which cannot reach the other containers to read the trace. Stop it with Ctrl-C, or `kill $(lsof -ti tcp:3000)`, then run `make up` again. `make doctor` reports this too.",
         saw: "One request from you turned into several requests between services. That's the shape of a real system, and it's why you need tooling to see inside it, because a single request now touches multiple programs and any one of them can be the problem.",
         check: { kind: "requests", service: "util", delta: 1 },
       },

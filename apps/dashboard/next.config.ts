@@ -17,6 +17,9 @@ const config: NextConfig = {
   // binary. A bundler cannot inline machine code into a JavaScript chunk, so
   // the build fails. Marking these external leaves them as plain runtime
   // require()s. Any package with a native binding needs this treatment.
+  //
+  // Span telemetry uses a tiny RESP client in lib/spans.ts (not ioredis) so
+  // standalone tracing cannot strip Redis I/O out of Request Path again.
   serverExternalPackages: ["dockerode", "docker-modem", "ssh2"],
 
   // The monorepo root, not apps/dashboard — otherwise the standalone trace

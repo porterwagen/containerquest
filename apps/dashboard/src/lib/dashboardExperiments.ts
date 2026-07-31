@@ -2,6 +2,9 @@ import type { DashboardCue } from "@/lessons";
 
 export type ExperimentId = NonNullable<DashboardCue["experiment"]>;
 
+/** Course-relative readiness for the experiment library. */
+export type ExperimentStatus = "upcoming" | "in-lesson" | "ready";
+
 export interface ExperimentDef {
   id: ExperimentId;
   lessonId: string;
@@ -79,7 +82,40 @@ export const EXPERIMENTS: ExperimentDef[] = [
 ];
 
 export const REQUEST_PATH_LESSON = "the-system";
+export const REQUEST_PATH_LESSON_TITLE = "The system you're about to learn on";
+
+/** Demo starter chips: high-signal experiments that need no Docker. */
+export const DEMO_STARTER_IDS: ExperimentId[] = [
+  "crash-recovery",
+  "readiness",
+  "k8s-scaling",
+];
 
 export function experimentById(id: string | null): ExperimentDef | undefined {
   return EXPERIMENTS.find((experiment) => experiment.id === id);
+}
+
+/**
+ * Ready = lesson completed (practice what you learned).
+ * In lesson = currently on that lesson (dual-tab capture).
+ * Upcoming = everything else (visible roadmap; still runnable).
+ */
+export function experimentStatus(
+  lessonId: string,
+  progress: { done: string[]; current: string },
+): ExperimentStatus {
+  if (progress.done.includes(lessonId)) return "ready";
+  if (progress.current === lessonId) return "in-lesson";
+  return "upcoming";
+}
+
+export function statusLabel(status: ExperimentStatus): string {
+  switch (status) {
+    case "ready":
+      return "Ready";
+    case "in-lesson":
+      return "In lesson";
+    case "upcoming":
+      return "Upcoming";
+  }
 }

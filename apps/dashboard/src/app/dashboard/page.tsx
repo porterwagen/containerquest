@@ -21,15 +21,16 @@ export default async function DashboardPage() {
       <p className="mb-5 max-w-2xl rounded-lg border border-edge bg-panel px-4 py-3 text-[12.5px] leading-relaxed text-ink-faint">
         {demo ? (
           <>
-            <span className="text-beam">Simulated. </span>
-            Overview is always the scoreboard. Experiments appear only when the matching lesson is
-            current or complete, and Kubernetes experiments use the in-browser simulator.
+            <span className="text-beam">Simulated fleet. </span>
+            Overview is the scoreboard. Experiments lists the full roadmap with fake data — crash,
+            unready, scale, and roll without Docker. Gray items are upcoming; Ready means you
+            finished the matching lesson.
           </>
         ) : (
           <>
             <span className="text-beam">Overview </span>
-            is always the fleet scoreboard. Named experiments unlock from the lessons that use
-            them, so every action has a before, an after, and one conclusion.
+            is always the fleet scoreboard. Experiments shows the full roadmap: upcoming items are
+            grayed but runnable; Ready items match completed lessons for practice.
           </>
         )}
       </p>

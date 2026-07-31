@@ -95,11 +95,13 @@ export async function GET(request: Request) {
       // 3. Trace spans, blocking-read from the Redis stream.
       const reader = newReader();
       let cursor = "$"; // "$" = only spans that arrive from now on.
+      let lastSpanError = "";
 
       const pumpSpans = async () => {
         while (!closed && !abort.signal.aborted) {
           try {
             const batch = await readSpans(reader, cursor, 2_000);
+            lastSpanError = "";
             cursor = batch.cursor;
             for (const s of batch.spans) {
               send({
@@ -115,11 +117,22 @@ export async function GET(request: Request) {
             }
           } catch (err) {
             if (closed) break;
+            const message = (err as Error).message;
+            if (message !== lastSpanError) {
+              lastSpanError = message;
+              send({
+                type: "log",
+                at: Date.now(),
+                service: "dashboard",
+                level: "error",
+                message: `span stream: ${message}`,
+                replicaId: null,
+              });
+            }
             await new Promise((r) => setTimeout(r, 1_000));
-            void err;
           }
         }
-        reader.disconnect();
+        reader.close();
       };
       void pumpSpans();
 

@@ -2,11 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Replica } from "@quest/contracts";
-import type { ExperimentDef } from "@/lib/dashboardExperiments";
+import type { ExperimentDef, ExperimentStatus } from "@/lib/dashboardExperiments";
+import { statusLabel } from "@/lib/dashboardExperiments";
 import type { FleetEntry } from "@/lib/fleet";
 import type { FleetState } from "@/lib/useEventStream";
 import { control, type Mode } from "@/lib/control";
 import { Timeline } from "./Timeline";
+
+export function UpcomingBanner({ lessonTitle, mode }: { lessonTitle: string; mode: Mode }) {
+  return (
+    <p className="mt-3 rounded-lg border border-edge bg-panel-2 px-3 py-2 text-[12px] leading-relaxed text-ink-faint">
+      Ahead of the course. You&apos;ll get more context in &ldquo;{lessonTitle}&rdquo;.
+      {mode === "demo"
+        ? " Running early on simulated data is fine."
+        : " Running early is fine if you want to explore."}
+    </p>
+  );
+}
 
 interface Observation {
   service: string;
@@ -23,24 +35,36 @@ export function ExperimentLab({
   mode,
   fleet,
   stream,
-  lessonCompleted,
+  status,
 }: {
   experiment: ExperimentDef;
   mode: Mode;
   fleet: FleetEntry[];
   stream: FleetState;
-  lessonCompleted: boolean;
+  status: ExperimentStatus;
 }) {
   return (
     <section className="overflow-hidden rounded-xl border border-edge bg-panel">
       <header className="border-b border-edge px-5 py-4">
-        <div className="text-[10px] uppercase tracking-[0.15em] text-beam">
-          Chapter {experiment.chapter} experiment
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-[10px] uppercase tracking-[0.15em] text-beam">
+            Chapter {experiment.chapter} experiment
+          </div>
+          <StatusPill status={status} />
         </div>
         <h2 className="mt-1 text-[18px] font-medium text-ink">{experiment.title}</h2>
         <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-ink-faint">
           {experiment.summary}
         </p>
+        {status === "upcoming" && (
+          <UpcomingBanner lessonTitle={experiment.lessonTitle} mode={mode} />
+        )}
+        {status === "in-lesson" && (
+          <p className="mt-3 rounded-lg border border-beam/30 bg-beam/5 px-3 py-2 text-[12px] leading-relaxed text-ink-dim">
+            This pairs with your current lesson. Prefer the terminal action when dual-tabbing; use
+            dashboard controls to practice or peek.
+          </p>
+        )}
       </header>
 
       <div className="p-5">
@@ -49,16 +73,30 @@ export function ExperimentLab({
         ) : experiment.id === "restart-vs-replace" ? (
           <IdentityExperiment mode={mode} fleet={fleet} stream={stream} />
         ) : experiment.id === "crash-recovery" ? (
-          <CrashExperiment mode={mode} fleet={fleet} stream={stream} lessonCompleted={lessonCompleted} />
+          <CrashExperiment mode={mode} fleet={fleet} stream={stream} />
         ) : experiment.id === "readiness" ? (
-          <ReadinessExperiment mode={mode} fleet={fleet} stream={stream} lessonCompleted={lessonCompleted} />
+          <ReadinessExperiment mode={mode} fleet={fleet} stream={stream} />
         ) : experiment.id === "compose-limits" ? (
-          <ComposeLimits />
+          <ComposeLimits mode={mode} />
         ) : (
           <KubernetesExperiment id={experiment.id} mode={mode} stream={stream} />
         )}
       </div>
     </section>
+  );
+}
+
+function StatusPill({ status }: { status: ExperimentStatus }) {
+  const tone =
+    status === "ready"
+      ? "border-live/40 bg-live/10 text-live"
+      : status === "in-lesson"
+        ? "border-beam/40 bg-beam/10 text-beam"
+        : "border-edge bg-panel-2 text-ink-faint";
+  return (
+    <span className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] ${tone}`}>
+      {statusLabel(status)}
+    </span>
   );
 }
 
@@ -76,6 +114,8 @@ function IdentityExperiment({
   const [restartAfter, setRestartAfter] = useState<Observation | null>(null);
   const [replaceBefore, setReplaceBefore] = useState<Observation | null>(null);
   const [replaceAfter, setReplaceAfter] = useState<Observation | null>(null);
+  const [busy, setBusy] = useState<"restart" | "replace" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!current || restartAfter || !restartBefore) return;
@@ -97,18 +137,94 @@ function IdentityExperiment({
     }
   }, [current, replaceAfter, replaceBefore]);
 
+  async function simulateRestart() {
+    if (!current) return;
+    setRestartBefore(current);
+    setRestartAfter(null);
+    setBusy("restart");
+    setError(null);
+    try {
+      // Sim crash restarts in place: same identity, restarts++, uptime reset.
+      await control(mode, "chaos", "ai", "crash");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function simulateReplace() {
+    if (!current) return;
+    setReplaceBefore(current);
+    setReplaceAfter(null);
+    setBusy("replace");
+    setError(null);
+    try {
+      // Sim restart deletes the pod and creates a new identity.
+      await control(mode, "restart", "ai");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (mode === "demo") {
     return (
-      <div className="space-y-3">
-        <p className="rounded-lg border border-warn/40 bg-warn/5 px-4 py-3 text-[12.5px] leading-relaxed text-ink-dim">
-          The hosted simulator models Kubernetes pod replacement, so it cannot honestly repeat
-          Docker&apos;s restart-in-place behavior. Play the two recorded terminal steps in the lesson
-          to see the real Docker result.
+      <div className="space-y-5">
+        <p className="rounded-lg border border-beam/30 bg-beam/5 px-4 py-3 text-[12.5px] leading-relaxed text-ink-dim">
+          Simulated identity comparison. The hosted model uses Kubernetes-style names, but the
+          lesson is the same: <strong className="font-medium text-ink">restart keeps identity</strong>,{" "}
+          <strong className="font-medium text-ink">replacement creates a new one</strong>. On your
+          machine the course uses real <span className="font-mono text-[11px]">docker restart</span>{" "}
+          vs recreate.
         </p>
-        <Takeaway>
-          A restart keeps the container identity and resets uptime. A replacement creates a new
-          identity and loses files stored in the old container&apos;s scratch filesystem.
-        </Takeaway>
+
+        <ExperimentRule
+          concept="ROUND 1: restart in place"
+          action="Simulate a process restart that keeps the same container/pod identity."
+          after="Identity stays put; restart count rises; uptime resets."
+        />
+        <EvidencePair before={restartBefore} after={restartAfter ?? (restartBefore ? current : null)} />
+        <button
+          type="button"
+          disabled={!current || busy !== null}
+          onClick={() => void simulateRestart()}
+          className="rounded-md border border-beam/60 bg-beam/5 px-3 py-2 text-[12px] text-beam disabled:opacity-40"
+        >
+          {busy === "restart" ? "Restarting…" : "Simulate restart-in-place"}
+        </button>
+        {restartBefore && !restartAfter && <Watching text="Waiting for same identity, new uptime" />}
+        {restartAfter && <Proof text="Restart proved: same identity, new uptime" />}
+
+        <div className="border-t border-edge pt-5">
+          <ExperimentRule
+            concept="ROUND 2: replacement"
+            action="Simulate deleting the unit so desired state creates a new identity."
+            after="A different identity appears."
+          />
+          <div className="mt-3">
+            <EvidencePair before={replaceBefore} after={replaceAfter ?? (replaceBefore ? current : null)} />
+          </div>
+          <button
+            type="button"
+            disabled={!current || busy !== null}
+            onClick={() => void simulateReplace()}
+            className="mt-3 rounded-md border border-beam/60 bg-beam/5 px-3 py-2 text-[12px] text-beam disabled:opacity-40"
+          >
+            {busy === "replace" ? "Replacing…" : "Simulate replacement"}
+          </button>
+          {replaceBefore && !replaceAfter && <Watching text="Waiting for a new AI identity" />}
+          {replaceAfter && <Proof text="Replacement proved: a new identity appeared" />}
+        </div>
+
+        {error && <ErrorNote text={error} />}
+        {restartAfter && replaceAfter && (
+          <Takeaway>
+            Restart and replacement can look like the same interruption from outside. Identity tells
+            them apart. Run the Docker lesson locally to see the same idea on real containers.
+          </Takeaway>
+        )}
       </div>
     );
   }
@@ -173,19 +289,16 @@ function CrashExperiment({
   mode,
   fleet,
   stream,
-  lessonCompleted,
 }: {
   mode: Mode;
   fleet: FleetEntry[];
   stream: FleetState;
-  lessonCompleted: boolean;
 }) {
   const current = useObservation("ai", mode, fleet, stream);
   const [before, setBefore] = useState<Observation | null>(null);
   const [after, setAfter] = useState<Observation | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canRepeat = mode === "demo" || lessonCompleted || after !== null;
 
   useEffect(() => {
     if (!before && current?.status === "ready") setBefore(current);
@@ -219,17 +332,21 @@ function CrashExperiment({
     <div className="space-y-4">
       <ExperimentRule
         concept="CRASH RECOVERY"
-        action="Run the lesson's crash curl, or repeat it here after you have practiced the command."
+        action={
+          mode === "demo"
+            ? "Crash AI once and watch the same identity return with a higher restart count."
+            : "Run the lesson's crash curl, or crash AI here to practice the same outcome."
+        }
         after="AI keeps its identity, restart count rises, and uptime starts over."
       />
       <EvidencePair before={before} after={after ?? current} />
       <button
         type="button"
-        disabled={busy || !current || !canRepeat}
+        disabled={busy || !current}
         onClick={() => void crashAgain()}
         className="rounded-md border border-dead/60 bg-dead/5 px-3 py-2 text-[12px] text-dead disabled:opacity-40"
       >
-        {busy ? "Requesting crash..." : canRepeat ? "Crash AI once" : "Run the terminal action first"}
+        {busy ? "Requesting crash..." : "Crash AI once"}
       </button>
       {error && <ErrorNote text={error} />}
       {before && !after && <Watching text="Watching for exit, restart count, and reset uptime" />}
@@ -251,19 +368,16 @@ function ReadinessExperiment({
   mode,
   fleet,
   stream,
-  lessonCompleted,
 }: {
   mode: Mode;
   fleet: FleetEntry[];
   stream: FleetState;
-  lessonCompleted: boolean;
 }) {
   const current = useObservation("util", mode, fleet, stream);
   const [before, setBefore] = useState<Observation | null>(null);
   const [after, setAfter] = useState<Observation | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canRepeat = mode === "demo" || lessonCompleted || after !== null;
 
   useEffect(() => {
     if (!before && current?.readiness === 200) setBefore(current);
@@ -298,13 +412,17 @@ function ReadinessExperiment({
     <div className="space-y-4">
       <ExperimentRule
         concept="READINESS VERSUS LIVENESS"
-        action="Run the lesson's unready curl, or repeat it here after practicing the command."
+        action={
+          mode === "demo"
+            ? "Make util unready once and watch both health answers."
+            : "Run the lesson's unready curl, or apply it here to practice."
+        }
         after="Liveness stays 200, readiness becomes 503, and the process is not restarted."
       />
       <EvidencePair before={before} after={after ?? current} showHealth />
       <button
         type="button"
-        disabled={busy || !current || current.readiness !== 200 || !canRepeat}
+        disabled={busy || !current || current.readiness !== 200}
         onClick={() => void makeUnready()}
         className="rounded-md border border-warn/60 bg-warn/5 px-3 py-2 text-[12px] text-warn disabled:opacity-40"
       >
@@ -312,9 +430,7 @@ function ReadinessExperiment({
           ? "Applying..."
           : current?.readiness === 503
             ? "Waiting for recovery"
-            : canRepeat
-              ? "Make util unready once"
-              : "Run the terminal action first"}
+            : "Make util unready once"}
       </button>
       {error && <ErrorNote text={error} />}
       {before && !after && <Watching text="Watching both health answers and restart count" />}
@@ -331,12 +447,22 @@ function ReadinessExperiment({
   );
 }
 
-function ComposeLimits() {
+function ComposeLimits({ mode }: { mode: Mode }) {
   return (
     <div className="space-y-4">
+      {mode === "demo" && (
+        <p className="rounded-lg border border-edge bg-panel-2 px-4 py-3 text-[12.5px] leading-relaxed text-ink-faint">
+          Concept board — no live scale attempt in the simulator. The point is the capability gap
+          you hit with Compose host ports.
+        </p>
+      )}
       <ExperimentRule
         concept="COMPOSE CAPABILITY BOUNDARY"
-        action="Run the lesson's docker compose scale command in the terminal."
+        action={
+          mode === "demo"
+            ? "Compare the two columns — Compose cannot express a multi-replica Service."
+            : "Run the lesson's docker compose scale command in the terminal."
+        }
         after="The second worker cannot claim host port 3001, so Compose reports a port conflict."
       />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -425,6 +551,11 @@ function KubernetesExperiment({
 
   return (
     <div className="space-y-4">
+      {mode === "demo" && (
+        <p className="rounded-lg border border-beam/30 bg-beam/5 px-3 py-2 text-[12px] text-ink-dim">
+          In-browser Kubernetes model — same replica lifecycle the lesson describes with kubectl.
+        </p>
+      )}
       <ExperimentRule concept={rule.concept} action={rule.action} after={rule.after} />
       <div className="grid gap-3 sm:grid-cols-3">
         <CapabilityCard title="actual" value={String(active.length)} note="Compute replicas present" />
@@ -486,7 +617,7 @@ function KubernetesUnavailable() {
       <p className="rounded-lg border border-warn/40 bg-warn/5 px-4 py-3 text-[12.5px] leading-relaxed text-ink-dim">
         This dashboard is connected to Docker Compose. The Kubernetes lesson still works through
         kubectl, but dashboard control stays locked until a real Kubernetes driver can observe and
-        verify the result.
+        verify the result. On the hosted demo, these experiments run in the in-browser simulator.
       </p>
       <Takeaway>
         Compose and Kubernetes have different control planes. A mode label alone does not make a

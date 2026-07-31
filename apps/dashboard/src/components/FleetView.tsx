@@ -5,16 +5,21 @@ import type { FleetEntry } from "@/lib/fleet";
 import { useEventStream, type TraceEdge } from "@/lib/useEventStream";
 import { control, fleetFromReplicas, type Mode } from "@/lib/control";
 import {
+  DEMO_STARTER_IDS,
   EXPERIMENTS,
   REQUEST_PATH_LESSON,
+  REQUEST_PATH_LESSON_TITLE,
   experimentById,
+  experimentStatus,
+  statusLabel,
   type ExperimentDef,
   type ExperimentId,
+  type ExperimentStatus,
 } from "@/lib/dashboardExperiments";
 import { ServiceCard } from "./ServiceCard";
 import { ParityPanel } from "./ParityPanel";
 import { Topology } from "./Topology";
-import { ExperimentLab } from "./ChaosLab";
+import { ExperimentLab, UpcomingBanner } from "./ChaosLab";
 
 const POLL_MS = 2_000;
 const PROGRESS_KEY = "container-quest.progress.v1";
@@ -33,6 +38,7 @@ interface RouteState {
 }
 
 const EMPTY_PROGRESS: CourseProgress = { done: [], current: "why-containers" };
+const EXPERIMENT_TOTAL = EXPERIMENTS.length + 1; // + Request Path
 
 function readProgress(): CourseProgress {
   try {
@@ -134,14 +140,18 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
   );
   const ready = fleet.filter((entry) => entry.status === "up").length;
   const languages = new Set(fleet.filter((entry) => entry.status !== "down").map((entry) => entry.def.language));
-  const unlocked = (lessonId: string) => progress.current === lessonId || progress.done.includes(lessonId);
-  const unlockedExperiments = EXPERIMENTS.filter((experiment) => unlocked(experiment.lessonId));
-  const requestPathUnlocked = unlocked(REQUEST_PATH_LESSON);
+
+  const requestPathStatus = experimentStatus(REQUEST_PATH_LESSON, progress);
   const selectedExperiment = experimentById(route.experiment);
-  const selectedUnlocked = selectedExperiment ? unlocked(selectedExperiment.lessonId) : false;
-  const showExperimentsNav = unlockedExperiments.length > 0 || requestPathUnlocked;
+  const selectedStatus = selectedExperiment
+    ? experimentStatus(selectedExperiment.lessonId, progress)
+    : null;
+
+  const readyCount =
+    EXPERIMENTS.filter((experiment) => experimentStatus(experiment.lessonId, progress) === "ready")
+      .length + (requestPathStatus === "ready" ? 1 : 0);
+
   const visibleEdges = stream.edges.filter((edge) => edge.at >= captureStartedAt);
-  const canRepeatPath = mode === "demo" || progress.done.includes(REQUEST_PATH_LESSON) || visibleEdges.length > 0;
 
   function navigate(next: RouteState) {
     setRoute(next);
@@ -191,14 +201,12 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
         >
           Overview
         </NavButton>
-        {showExperimentsNav && (
-          <NavButton
-            active={route.view === "experiments" || route.view === "request-path"}
-            onClick={() => navigate({ view: "experiments", experiment: null, focus: null })}
-          >
-            Experiments ({unlockedExperiments.length + (requestPathUnlocked ? 1 : 0)})
-          </NavButton>
-        )}
+        <NavButton
+          active={route.view === "experiments" || route.view === "request-path"}
+          onClick={() => navigate({ view: "experiments", experiment: null, focus: null })}
+        >
+          Experiments ({readyCount}/{EXPERIMENT_TOTAL} ready)
+        </NavButton>
       </nav>
 
       {route.view === "overview" && (
@@ -208,13 +216,14 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
           connected={stream.connected}
           stale={stale}
           spans={stream.edges.length}
+          mode={mode}
+          onOpenExperiments={() => navigate({ view: "experiments", experiment: null, focus: null })}
         />
       )}
 
       {route.view === "experiments" && !route.experiment && (
         <ExperimentLibrary
-          experiments={unlockedExperiments}
-          requestPathUnlocked={requestPathUnlocked}
+          progress={progress}
           mode={mode}
           onSelect={openExperiment}
           onRequestPath={() => {
@@ -224,7 +233,7 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
         />
       )}
 
-      {route.view === "experiments" && route.experiment && selectedExperiment && selectedUnlocked && (
+      {route.view === "experiments" && route.experiment && selectedExperiment && selectedStatus && (
         <div className="space-y-3">
           <BackToExperiments onClick={() => navigate({ view: "experiments", experiment: null, focus: null })} />
           <ExperimentLab
@@ -233,25 +242,32 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
             mode={mode}
             fleet={fleet}
             stream={stream}
-            lessonCompleted={progress.done.includes(selectedExperiment.lessonId)}
+            status={selectedStatus}
           />
         </div>
       )}
 
-      {route.view === "experiments" && route.experiment && (!selectedExperiment || !selectedUnlocked) && (
-        <LockedExperiment experiment={selectedExperiment} />
+      {route.view === "experiments" && route.experiment && !selectedExperiment && (
+        <UnknownExperiment id={route.experiment} />
       )}
 
-      {route.view === "request-path" && requestPathUnlocked && (
+      {route.view === "request-path" && (
         <div className="space-y-3">
           <BackToExperiments onClick={() => navigate({ view: "experiments", experiment: null, focus: null })} />
           <section className="rounded-xl border border-edge bg-panel px-5 py-4">
-            <div className="text-[10px] uppercase tracking-[0.15em] text-beam">Chapter 0 evidence</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-[10px] uppercase tracking-[0.15em] text-beam">Chapter 0 evidence</div>
+              <StatusPill status={requestPathStatus} />
+            </div>
             <h2 className="mt-1 text-[18px] font-medium text-ink">Request Path</h2>
             <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-ink-faint">
-              Keep this view open, then run the lesson&apos;s curl command. It records only real HTTP
-              hops, so an idle graph means the system is waiting for the action.
+              {mode === "demo"
+                ? "Send one simulated request and watch util fan out to AI and Compute. Same hop structure as the live lesson."
+                : "Keep this view open, then run the lesson's curl command. It records only real HTTP hops, so an idle graph means the system is waiting for the action."}
             </p>
+            {requestPathStatus === "upcoming" && (
+              <UpcomingBanner lessonTitle={REQUEST_PATH_LESSON_TITLE} mode={mode} />
+            )}
             {pathError && <p className="mt-2 font-mono text-[11px] text-dead">{pathError}</p>}
           </section>
           <Topology
@@ -259,11 +275,15 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
             fleet={fleet}
             onGenerate={() => void generateTraffic()}
             generating={generating}
-            actionDisabled={!canRepeatPath}
-            buttonLabel={canRepeatPath ? "Send one request" : "Run the terminal action first"}
+            actionDisabled={false}
+            buttonLabel="Send one request"
             title="Observed service-to-service hops"
             subtitle="The lesson request reaches util, which records its calls to AI and Compute."
-            emptyHint="No captured request yet. Run curl in the lesson, or send one request here to repeat it."
+            emptyHint={
+              mode === "demo"
+                ? "No captured request yet. Send one request to see the fan-out."
+                : "No captured request yet. Prefer curl in the lesson when dual-tabbing, or send one request here."
+            }
           />
           <TraceList edges={visibleEdges} />
           {visibleEdges.length > 0 && (
@@ -276,10 +296,6 @@ export function FleetView({ initial, mode = "live" }: { initial: FleetEntry[]; m
             </div>
           )}
         </div>
-      )}
-
-      {route.view === "request-path" && !requestPathUnlocked && (
-        <LockedExperiment requestPath />
       )}
 
       <footer className="pb-8 text-center font-mono text-[10px] text-ink-faint">
@@ -295,18 +311,34 @@ function Overview({
   connected,
   stale,
   spans,
+  mode,
+  onOpenExperiments,
 }: {
   fleet: FleetEntry[];
   focus: string | null;
   connected: boolean;
   stale: boolean;
   spans: number;
+  mode: Mode;
+  onOpenExperiments: () => void;
 }) {
   return (
     <>
       <p className="rounded-lg border border-edge bg-panel px-4 py-2.5 text-[12.5px] leading-relaxed text-ink-faint">
-        The five application cards are the scoreboard: identity, uptime, requests, and readiness.
-        PostgreSQL, Redis, and the socket proxy complete the eight-container Compose project.
+        {mode === "demo" ? (
+          <>
+            Simulated fleet scoreboard: identity, uptime, requests, and readiness. Open{" "}
+            <button type="button" onClick={onOpenExperiments} className="text-beam hover:underline">
+              Experiments
+            </button>{" "}
+            to crash, unready, or scale with fake data.
+          </>
+        ) : (
+          <>
+            The five application cards are the scoreboard: identity, uptime, requests, and readiness.
+            PostgreSQL, Redis, and the socket proxy complete the eight-container Compose project.
+          </>
+        )}
       </p>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {fleet.map((entry, index) => (
@@ -334,58 +366,98 @@ function Overview({
         </dl>
       </details>
       <p className="text-center text-[11.5px] text-ink-faint">
-        Experiments appear here only after the course reaches a lesson that uses one.
+        Experiments lists the full roadmap. Gray items are upcoming;{" "}
+        <span className="text-ink-dim">Ready</span> means you finished the matching lesson.
       </p>
     </>
   );
 }
 
 function ExperimentLibrary({
-  experiments,
-  requestPathUnlocked,
+  progress,
   mode,
   onSelect,
   onRequestPath,
 }: {
-  experiments: ExperimentDef[];
-  requestPathUnlocked: boolean;
+  progress: CourseProgress;
   mode: Mode;
   onSelect: (id: ExperimentId) => void;
   onRequestPath: () => void;
 }) {
+  const requestStatus = experimentStatus(REQUEST_PATH_LESSON, progress);
+  const starters = DEMO_STARTER_IDS.map((id) => experimentById(id)).filter(
+    (experiment): experiment is ExperimentDef => Boolean(experiment),
+  );
+
   return (
     <section className="overflow-hidden rounded-xl border border-edge bg-panel">
       <header className="border-b border-edge px-5 py-4">
-        <h2 className="text-[18px] font-medium text-ink">Unlocked experiments</h2>
+        <h2 className="text-[18px] font-medium text-ink">Experiments</h2>
         <p className="mt-1 text-[12.5px] text-ink-faint">
-          Each one names a concept, captures before, performs one action, and proves the result.
+          Full roadmap. Upcoming items are grayed but still runnable. Ready items match completed
+          lessons — the best time to practice.
         </p>
       </header>
-      <div className="grid gap-3 p-5 md:grid-cols-2">
-        {!requestPathUnlocked && experiments.length === 0 && (
-          <p className="text-[12.5px] leading-relaxed text-ink-faint">
-            No experiments are unlocked yet. Return to Learn and continue until a lesson opens a
-            named dashboard experiment.
+
+      {mode === "demo" && (
+        <div className="border-b border-edge bg-beam/5 px-5 py-3">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-beam">Try these first</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onRequestPath}
+              className="rounded-md border border-beam/40 bg-panel px-2.5 py-1.5 text-[11.5px] text-beam hover:border-beam"
+            >
+              Request Path
+            </button>
+            {starters.map((experiment) => (
+              <button
+                key={experiment.id}
+                type="button"
+                onClick={() => onSelect(experiment.id)}
+                className="rounded-md border border-beam/40 bg-panel px-2.5 py-1.5 text-[11.5px] text-beam hover:border-beam"
+              >
+                {experiment.title}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[11.5px] text-ink-faint">
+            Simulated fleet — no Docker required. Actions update the cards above with fake data.
           </p>
-        )}
-        {requestPathUnlocked && (
-          <ExperimentButton
-            title="Request Path"
-            summary="See one request fan out from util to AI and Compute."
-            chapter={0}
-            onClick={onRequestPath}
-          />
-        )}
-        {experiments.map((experiment) => (
-          <ExperimentButton
-            key={experiment.id}
-            title={experiment.title}
-            summary={experiment.summary}
-            chapter={experiment.chapter}
-            badge={experiment.kubernetes && mode === "live" ? "kubectl only" : undefined}
-            onClick={() => onSelect(experiment.id)}
-          />
-        ))}
+        </div>
+      )}
+
+      <div className="grid gap-3 p-5 md:grid-cols-2">
+        <ExperimentButton
+          title="Request Path"
+          summary="See one request fan out from util to AI and Compute."
+          chapter={0}
+          status={requestStatus}
+          lessonTitle={REQUEST_PATH_LESSON_TITLE}
+          badge={undefined}
+          onClick={onRequestPath}
+        />
+        {EXPERIMENTS.map((experiment) => {
+          const status = experimentStatus(experiment.lessonId, progress);
+          const extraBadge =
+            experiment.kubernetes && mode === "live"
+              ? "kubectl only"
+              : experiment.kubernetes && mode === "demo"
+                ? "sim"
+                : undefined;
+          return (
+            <ExperimentButton
+              key={experiment.id}
+              title={experiment.title}
+              summary={experiment.summary}
+              chapter={experiment.chapter}
+              status={status}
+              lessonTitle={experiment.lessonTitle}
+              badge={extraBadge}
+              onClick={() => onSelect(experiment.id)}
+            />
+          );
+        })}
       </div>
     </section>
   );
@@ -395,49 +467,84 @@ function ExperimentButton({
   title,
   summary,
   chapter,
+  status,
+  lessonTitle,
   badge,
   onClick,
 }: {
   title: string;
   summary: string;
   chapter: number;
+  status: ExperimentStatus;
+  lessonTitle: string;
   badge?: string;
   onClick: () => void;
 }) {
+  const upcoming = status === "upcoming";
+  const inLesson = status === "in-lesson";
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-edge bg-panel-2 p-4 text-left transition-colors hover:border-edge-bright"
+      className={`rounded-lg border p-4 text-left transition-colors ${
+        upcoming
+          ? "border-dashed border-edge/70 bg-panel-2/50 opacity-60 hover:opacity-90 hover:border-edge"
+          : inLesson
+            ? "border-beam/50 bg-beam/5 hover:border-beam"
+            : "border-edge bg-panel-2 hover:border-edge-bright"
+      }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-[0.14em] text-beam">Chapter {chapter}</span>
-        {badge && <span className="font-mono text-[10px] text-warn">{badge}</span>}
+        <span
+          className={`text-[10px] uppercase tracking-[0.14em] ${
+            upcoming ? "text-ink-faint" : "text-beam"
+          }`}
+        >
+          Chapter {chapter}
+        </span>
+        <div className="flex items-center gap-2">
+          {badge && <span className="font-mono text-[10px] text-warn">{badge}</span>}
+          <StatusPill status={status} />
+        </div>
       </div>
-      <h3 className="mt-1 text-[14px] font-medium text-ink">{title}</h3>
+      <h3 className={`mt-1 text-[14px] font-medium ${upcoming ? "text-ink-dim" : "text-ink"}`}>
+        {title}
+      </h3>
       <p className="mt-1 text-[12px] leading-relaxed text-ink-faint">{summary}</p>
+      <p className="mt-2 text-[11px] text-ink-faint">
+        {status === "ready"
+          ? "Lesson completed · practice again"
+          : status === "in-lesson"
+            ? `Open with “${lessonTitle}”`
+            : `From “${lessonTitle}” · try early →`}
+      </p>
     </button>
   );
 }
 
-function LockedExperiment({
-  experiment,
-  requestPath = false,
-}: {
-  experiment?: ExperimentDef;
-  requestPath?: boolean;
-}) {
-  const lesson = requestPath ? REQUEST_PATH_LESSON : experiment?.lessonId;
-  const lessonTitle = requestPath ? "The system you're about to learn on" : experiment?.lessonTitle;
-  const title = requestPath ? "Request Path" : experiment?.title ?? "Unknown experiment";
+function StatusPill({ status }: { status: ExperimentStatus }) {
+  const tone =
+    status === "ready"
+      ? "border-live/40 bg-live/10 text-live"
+      : status === "in-lesson"
+        ? "border-beam/40 bg-beam/10 text-beam"
+        : "border-edge bg-panel text-ink-faint";
+  return (
+    <span className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] ${tone}`}>
+      {statusLabel(status)}
+    </span>
+  );
+}
+
+function UnknownExperiment({ id }: { id: string }) {
   return (
     <section className="rounded-xl border border-edge bg-panel p-6">
-      <div className="text-[10px] uppercase tracking-[0.14em] text-warn">Locked</div>
-      <h2 className="mt-1 text-[18px] font-medium text-ink">{title}</h2>
+      <div className="text-[10px] uppercase tracking-[0.14em] text-warn">Unknown experiment</div>
+      <h2 className="mt-1 text-[18px] font-medium text-ink">{id}</h2>
       <p className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-ink-faint">
-        {lesson
-          ? `This unlocks when “${lessonTitle}” is your current lesson or has been completed. The lesson introduces the terminal action before the dashboard offers a repeat.`
-          : "This link does not name a dashboard experiment that exists."}
+        This link does not name a dashboard experiment that exists. Open Experiments for the full
+        roadmap.
       </p>
     </section>
   );
@@ -457,7 +564,7 @@ function TraceList({ edges }: { edges: TraceEdge[] }) {
         <p className="mt-0.5 text-[12px] text-ink-faint">Observed evidence, newest first.</p>
       </header>
       {groups.length === 0 ? (
-        <p className="px-5 py-6 text-center text-[11.5px] text-ink-faint">Waiting for the lesson action.</p>
+        <p className="px-5 py-6 text-center text-[11.5px] text-ink-faint">Waiting for a request.</p>
       ) : (
         <div className="divide-y divide-edge/60">
           {groups.map(([traceId, traceEdges]) => (
@@ -501,7 +608,7 @@ function NavButton({ active, onClick, children }: { active: boolean; onClick: ()
 function BackToExperiments({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="text-[12px] text-beam hover:underline">
-      ← All unlocked experiments
+      ← All experiments
     </button>
   );
 }

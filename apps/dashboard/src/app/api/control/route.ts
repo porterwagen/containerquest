@@ -181,20 +181,21 @@ async function generateTraffic(count: number): Promise<{
 
     // Hop 1: dashboard → util. /aggregate makes util fan out to ai + compute.
     const t0 = Date.now();
+    let status = 0;
     try {
       const res = await fetch(`${utilUrl}/aggregate`, {
         headers: { [TRACE_HEADER]: traceId },
         signal: AbortSignal.timeout(6_000),
         cache: "no-store",
       });
-      const s = span(traceId, "dashboard", "util", t0, res.status);
-      recordSpan(s);
-      hops.push({ from: s.from, to: s.to, ms: s.ms, status: s.status });
+      status = res.status;
     } catch {
-      const s = span(traceId, "dashboard", "util", t0, 0);
-      recordSpan(s);
-      hops.push({ from: s.from, to: s.to, ms: s.ms, status: s.status });
+      status = 0;
     }
+    const s = span(traceId, "dashboard", "util", t0, status);
+    // Await so Redis failures show up as 500 instead of an empty graph.
+    await recordSpan(s);
+    hops.push({ from: s.from, to: s.to, ms: s.ms, status: s.status });
   });
 
   await Promise.all(runs);
