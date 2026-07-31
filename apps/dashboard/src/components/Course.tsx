@@ -54,6 +54,11 @@ function loadProgress(): Progress {
 export function Course({ mode = "live" }: { mode?: Mode }) {
   const [progress, setProgress] = useState<Progress>({ done: [], current: LESSONS[0]!.id });
   const [hydrated, setHydrated] = useState(false);
+  // Bumped when clearing a lesson so LessonView remounts (step ticks + probe
+  // baseline reset). Keyed with lesson.id so navigation still remounts too.
+  const [lessonEpoch, setLessonEpoch] = useState(0);
+  const lessonTopRef = useRef<HTMLDivElement>(null);
+  const pendingScrollRef = useRef(false);
 
   useEffect(() => {
     setProgress(loadProgress());
@@ -76,22 +81,70 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
     setProgress((p) => (p.done.includes(id) ? p : { ...p, done: [...p.done, id] }));
   }, []);
 
+  // Scroll to the lesson heading after the new lesson paints. Used by the
+  // sidebar, Previous, and Next — especially useful on mobile where the
+  // accordion collapses and the lesson jumps into view.
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    pendingScrollRef.current = false;
+    const el = lessonTopRef.current;
+    if (!el) return;
+    // Double rAF: wait for LessonView remount + mobile menu collapse layout.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }, [progress.current]);
+
   const goTo = useCallback((id: string) => {
+    pendingScrollRef.current = true;
     setProgress((p) => ({ ...p, current: id }));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  /** Unmark the current lesson and re-run its steps from a fresh baseline. */
+  const clearLesson = useCallback((id: string) => {
+    setProgress((p) => ({
+      ...p,
+      done: p.done.filter((d) => d !== id),
+    }));
+    setLessonEpoch((e) => e + 1);
+  }, []);
+
+  /** Wipe every checkmark and jump back to the first lesson. Confirm first. */
+  const resetProgress = useCallback(() => {
+    if (
+      !window.confirm(
+        "Reset all progress? Every completed lesson will be unmarked. You will start again at the first lesson.",
+      )
+    ) {
+      return;
+    }
+    pendingScrollRef.current = true;
+    setProgress({ done: [], current: LESSONS[0]!.id });
+    setLessonEpoch((e) => e + 1);
   }, []);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-      <Sidebar current={lesson.id} done={progress.done} onSelect={goTo} mode={mode} />
+      <Sidebar
+        current={lesson.id}
+        currentTitle={lesson.title}
+        done={progress.done}
+        onSelect={goTo}
+        onClearLesson={() => clearLesson(lesson.id)}
+        onResetProgress={resetProgress}
+        mode={mode}
+      />
 
-      <div className="min-w-0">
+      <div ref={lessonTopRef} className="min-w-0 scroll-mt-3">
         <LessonView
-          key={lesson.id}
+          key={`${lesson.id}-${lessonEpoch}`}
           lesson={lesson}
           done={isDone}
           mode={mode}
           onComplete={() => complete(lesson.id)}
+          onClearLesson={() => clearLesson(lesson.id)}
         />
 
         <nav className="mt-6 flex items-center justify-between gap-3 border-t border-edge pt-5">
@@ -123,91 +176,168 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
 
 function Sidebar({
   current,
+  currentTitle,
   done,
   onSelect,
+  onClearLesson,
+  onResetProgress,
   mode,
 }: {
   current: string;
+  currentTitle: string;
   done: string[];
   onSelect: (id: string) => void;
+  onClearLesson: () => void;
+  onResetProgress: () => void;
   mode: Mode;
 }) {
+  // Mobile-only accordion: collapsed by default so the lesson is reachable.
+  // Desktop (lg+) always shows the full menu — no toggle, no collapse.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const currentDone = done.includes(current);
+
+  const handleSelect = (id: string) => {
+    onSelect(id);
+    setMenuOpen(false);
+  };
+
   return (
     <aside className="lg:sticky lg:top-6 lg:self-start">
-      <div className="mb-3 flex items-baseline justify-between">
+      {/* Mobile accordion header — hidden from lg up */}
+      <button
+        type="button"
+        onClick={() => setMenuOpen((o) => !o)}
+        aria-expanded={menuOpen}
+        aria-controls="course-menu"
+        className="mb-3 flex w-full cursor-pointer items-center gap-3 rounded-lg border border-edge bg-panel px-3 py-2.5 text-left transition-colors hover:border-edge-bright lg:hidden"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">Course</span>
+            <span className="font-mono text-[11px] text-ink-faint">
+              {done.length}/{LESSONS.length}
+            </span>
+          </div>
+          <div className="mt-0.5 truncate text-[13px] text-ink">{currentTitle}</div>
+        </div>
+        <span
+          className="shrink-0 text-ink-faint transition-transform duration-200"
+          style={{ transform: menuOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+          aria-hidden
+        >
+          ▾
+        </span>
+      </button>
+
+      {/* Desktop header (no toggle) */}
+      <div className="mb-3 hidden items-baseline justify-between lg:flex">
         <h2 className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">Course</h2>
         <span className="font-mono text-[11px] text-ink-faint">
           {done.length}/{LESSONS.length}
         </span>
       </div>
 
-      {chapters().map((ch) => {
-        const chDone = ch.lessons.filter((l) => done.includes(l.id)).length;
-        return (
-          <div key={ch.number} className="mb-4">
-            <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <span className="text-[11px] font-medium text-ink-dim">
-                {ch.number}. {ch.title}
-              </span>
-              <span
-                className="shrink-0 font-mono text-[10px]"
-                style={{
-                  color:
-                    chDone === ch.lessons.length
-                      ? "var(--color-live)"
-                      : "var(--color-ink-faint)",
-                }}
-              >
-                {chDone}/{ch.lessons.length}
-              </span>
-            </div>
-            <ul className="space-y-0.5">
-              {ch.lessons.map((l, i) => {
-                const isDone = done.includes(l.id);
-                const isCurrent = l.id === current;
-                // A long chapter reads as a few short arcs rather than one
-                // undifferentiated wall. Drawn whenever the label changes.
-                const newSection = l.section && l.section !== ch.lessons[i - 1]?.section;
-                return (
-                  <li key={l.id}>
-                    {newSection && (
-                      <div
-                        className={`px-2 pb-1 text-[10px] uppercase tracking-[0.12em] text-ink-faint ${
-                          i === 0 ? "" : "mt-2.5 border-t border-edge pt-2.5"
+      {/* Menu body: always visible on desktop; accordion panel on mobile */}
+      <div
+        id="course-menu"
+        className={`${menuOpen ? "block" : "hidden"} lg:block`}
+      >
+        {chapters().map((ch) => {
+          const chDone = ch.lessons.filter((l) => done.includes(l.id)).length;
+          return (
+            <div key={ch.number} className="mb-4">
+              <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                <span className="text-[11px] font-medium text-ink-dim">
+                  {ch.number}. {ch.title}
+                </span>
+                <span
+                  className="shrink-0 font-mono text-[10px]"
+                  style={{
+                    color:
+                      chDone === ch.lessons.length
+                        ? "var(--color-live)"
+                        : "var(--color-ink-faint)",
+                  }}
+                >
+                  {chDone}/{ch.lessons.length}
+                </span>
+              </div>
+              <ul className="space-y-0.5">
+                {ch.lessons.map((l, i) => {
+                  const isDone = done.includes(l.id);
+                  const isCurrent = l.id === current;
+                  // A long chapter reads as a few short arcs rather than one
+                  // undifferentiated wall. Drawn whenever the label changes.
+                  const newSection = l.section && l.section !== ch.lessons[i - 1]?.section;
+                  return (
+                    <li key={l.id}>
+                      {newSection && (
+                        <div
+                          className={`px-2 pb-1 text-[10px] uppercase tracking-[0.12em] text-ink-faint ${
+                            i === 0 ? "" : "mt-2.5 border-t border-edge pt-2.5"
+                          }`}
+                        >
+                          {l.section}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleSelect(l.id)}
+                        className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+                          isCurrent
+                            ? "bg-panel-2 text-ink"
+                            : "text-ink-faint hover:bg-panel hover:text-ink-dim"
                         }`}
                       >
-                        {l.section}
-                      </div>
-                    )}
-                    <button
-                      onClick={() => onSelect(l.id)}
-                      className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
-                        isCurrent
-                          ? "bg-panel-2 text-ink"
-                          : "text-ink-faint hover:bg-panel hover:text-ink-dim"
-                      }`}
-                    >
-                      <span
-                        className="shrink-0 font-mono text-[10px]"
-                        style={{ color: isDone ? "var(--color-live)" : "var(--color-ink-faint)" }}
-                      >
-                        {isDone ? "✓" : "○"}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-      })}
+                        <span
+                          className="shrink-0 font-mono text-[10px]"
+                          style={{
+                            color: isDone ? "var(--color-live)" : "var(--color-ink-faint)",
+                          }}
+                        >
+                          {isDone ? "✓" : "○"}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
 
-      <p className="mt-5 border-t border-edge pt-4 text-[11.5px] leading-relaxed text-ink-faint">
-        {mode === "demo"
-          ? "Every command here was really run against a real system - press run to replay what it printed."
-          : "Keep a terminal open beside this. Every lesson asks you to run something real."}
-      </p>
+        <p className="mt-5 border-t border-edge pt-4 text-[11.5px] leading-relaxed text-ink-faint">
+          {mode === "demo"
+            ? "Every command here was really run against a real system - press run to replay what it printed."
+            : "Keep a terminal open beside this. Every lesson asks you to run something real."}
+        </p>
+
+        {/* Progress controls live at the foot of the menu: scoped first,
+            destructive second — and only the full wipe asks for confirm. */}
+        <div className="mt-4 space-y-1.5 border-t border-edge pt-4">
+          <button
+            type="button"
+            onClick={onClearLesson}
+            title="Unmark this lesson and restart its steps"
+            className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-[12px] text-ink-faint transition-colors hover:bg-panel hover:text-ink-dim"
+          >
+            Clear this lesson
+            {currentDone ? (
+              <span className="ml-1.5 font-mono text-[10px] text-ink-faint">✓</span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={onResetProgress}
+            disabled={done.length === 0}
+            title="Unmark every completed lesson and return to the start"
+            className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-[12px] text-ink-faint transition-colors hover:bg-panel hover:text-dead disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-ink-faint"
+          >
+            Reset all progress
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }
@@ -217,11 +347,13 @@ function LessonView({
   done,
   mode,
   onComplete,
+  onClearLesson,
 }: {
   lesson: Lesson;
   done: boolean;
   mode: Mode;
   onComplete: () => void;
+  onClearLesson: () => void;
 }) {
   const [passed, setPassed] = useState<boolean[]>(() => lesson.steps.map(() => false));
   const [manual, setManual] = useState<boolean[]>(() => lesson.steps.map(() => false));
@@ -349,12 +481,21 @@ function LessonView({
               <code className="font-mono text-ink-dim">{lesson.source.path}</code>.
             </p>
           )}
-          <Link
-            href="/dashboard"
-            className="mt-4 inline-block rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
-          >
-            See it on the live dashboard →
-          </Link>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Link
+              href="/dashboard"
+              className="inline-block rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+            >
+              See it on the live dashboard →
+            </Link>
+            <button
+              type="button"
+              onClick={onClearLesson}
+              className="cursor-pointer rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-faint transition-colors hover:border-edge-bright hover:text-ink-dim"
+            >
+              Clear this lesson
+            </button>
+          </div>
         </div>
       )}
 
