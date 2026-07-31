@@ -24,7 +24,9 @@ import { writeFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { LESSONS } from "../apps/dashboard/src/lessons/index.ts";
+import { loadLessons } from "./lessons-loader.mjs";
+
+const LESSONS = await loadLessons();
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "apps/dashboard/src/generated/recordings.json");
 

@@ -29,6 +29,16 @@ make up       # build and start all eight containers
 
 Then open **http://localhost:3000** and start with Chapter 0.
 
+Chapters 0 through 4 need nothing but Docker. Chapter 5 adds Kubernetes, and its
+first lesson checks for `kubectl` and `kind` and then has you run:
+
+```bash
+make k8s      # create the kind cluster, side-load the images, apply the manifests
+```
+
+That one is safe to re-run at any point: it skips cluster creation if you
+already have one, so it is also the fix when the cluster looks wrong.
+
 When you are finished:
 
 ```bash

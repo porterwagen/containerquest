@@ -82,17 +82,31 @@ meta:
 	@for p in 3000 3001 8000 8080 9000; do \
 	  echo "--- :$$p ---"; curl -s --max-time 3 localhost:$$p/meta || echo "(no response)"; echo; done
 
-## cluster: create the local kind cluster
+## cluster: create the local kind cluster (skipped if it already exists)
+#
+# teach: `kind create cluster` fails outright when a cluster of that name is
+# teach: already there, which made `make k8s` a one-shot command: safe the first
+# teach: time, an error every time after. Chapter 5 tells learners to run it
+# teach: whenever the cluster looks wrong, so it has to be re-runnable. Checking
+# teach: first is the whole fix.
 cluster:
-	kind create cluster --config infra/k8s/kind-cluster.yaml
+	@if kind get clusters 2>/dev/null | grep -qx '$(CLUSTER)'; then \
+	  printf "  %-10s already exists (%s)\n" cluster $(CLUSTER); \
+	else \
+	  kind create cluster --config infra/k8s/kind-cluster.yaml; \
+	fi
 
 ## cluster-rm: delete the kind cluster
 cluster-rm:
 	kind delete cluster --name $(CLUSTER)
 
 ## load: build images and side-load them into kind (no registry needed)
+#
+# teach: --quiet on purpose. The images are normally already built by `make up`,
+# teach: so the build here is a cache check, and 200 lines of BuildKit output
+# teach: buries the part that matters: which images went onto which nodes.
 load:
-	$(COMPOSE) build
+	$(COMPOSE) build --quiet
 	@for s in compute ai util; do kind load docker-image quest/$$s:dev --name $(CLUSTER); done
 
 ## k8s: cluster + images + manifests, everything Chapter 5 needs

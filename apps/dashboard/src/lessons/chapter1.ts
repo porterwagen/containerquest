@@ -24,7 +24,7 @@ export const CHAPTER_1: Lesson[] = [
       "In Getting Started you already did the important first loop: pull or build an image, run a container, see that the instance is not the same thing as the package, keep one service up with -d and ports, then stop it.",
       "You also met the reason containers exist: a program needs a whole world around it (language, libraries, files, settings), and shipping that world beats a fragile README.",
       "This chapter does not re-teach that from zero. It uses the eight containers of this project (if they are not up, run `make up` from the project folder) to show what \"a process with a private view\" looks like when you can poke real services.",
-      "You will list the fleet, talk to a C service, then catch the same process claiming to be pid 1 inside while your Mac sees a normal host pid. That is the deepest version of \"not a tiny computer.\"",
+      "You will list the fleet, talk to a C service, then catch the same process claiming to be pid 1 inside while the system running it sees an ordinary pid like any other program's. That is the deepest version of \"not a tiny computer.\"",
     ],
     steps: [
       {
@@ -67,8 +67,9 @@ export const CHAPTER_1: Lesson[] = [
     concept: [
       "You already heard that a container is closer to a process than a VM. Here is the proof you can feel in your hands.",
       "A virtual machine is a fake computer. It boots an entire guest operating system that thinks it is talking to real hardware. That is why it takes a long time to start and costs a lot of memory.",
-      "A container has none of that boot. It is an ordinary program running on the host kernel: the same kind of thing as your editor. The operating system has been told to limit what that program can see: its filesystem root, its process list, its network view.",
+      "A container has none of that boot. It is an ordinary program running on a Linux kernel that was already up, and that kernel has been told to limit what the program can see: its filesystem root, its process list, its network view.",
       "That restricted view is the whole trick. The program is told: this folder is the entire filesystem, these are the only other programs that exist, this is your network. It believes all of it, because it has no way to check.",
+      "One detail you need if you are on a Mac, because it changes what you're about to see. Containers are a Linux feature, and macOS is not Linux, so OrbStack and Docker Desktop run a small Linux virtual machine in the background and your containers are ordinary processes inside THAT. Note the shape of it: one VM, booted once, shared by every container you run: not one VM per container, which is precisely the arrangement containers exist to avoid. On a Linux machine there is no VM and a container really is a process sitting next to your editor. Either way the container itself is a process, not a machine.",
       "You can catch the lie in the act. You are about to look at one single program from two different angles and get two different answers.",
     ],
     steps: [
@@ -83,13 +84,13 @@ export const CHAPTER_1: Lesson[] = [
       },
       {
         instruction:
-          "Now look at that exact same program from outside, from your Mac's point of view.",
+          "Now look at that exact same program from outside its restricted view.",
         command: "docker top container-quest-ai-1",
         commandParts: [
-          { piece: "docker top", meaning: "Show the real host process(es) for this container" },
+          { piece: "docker top", meaning: "Show the real process(es) behind this container, as the Linux side sees them" },
           { piece: "container-quest-ai-1", meaning: "Container name" },
         ],
-        saw: "A number like 148018 instead of 1. This is the same running program (one process, one place in memory) and it has two completely different identities depending on where you stand. Neither number is wrong. Inside its restricted view it genuinely is #1. From your machine it's just another process among hundreds. That gap is the entire trick.",
+        saw: "A number like 148018 instead of 1. This is the same running program (one process, one place in memory) and it has two completely different identities depending on where you stand. Neither number is wrong: inside its restricted view it genuinely is #1, and outside that view it is just another process among hundreds. That gap is the entire trick. On a Mac, \"outside\" means the Linux VM from the concept above, so don't go looking for this pid in Activity Monitor: what you would find there is OrbStack or Docker Desktop, one process holding the whole VM. On Linux the number is a real host pid you could pass straight to `kill`.",
         check: { kind: "manual", label: "I saw a big number, not 1" },
       },
     ],

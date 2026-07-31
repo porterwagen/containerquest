@@ -4,9 +4,10 @@ import { experienceCommand } from "@/lib/dashboardExperiments";
 /**
  * Chapter 5  -  Kubernetes.
  *
- * A real three-node cluster is already running locally, with this project's
- * services deployed to it. Every command here was run against that cluster
- * before being written down.
+ * The first lesson is the setup gate: Chapters 0-4 need nothing but Docker, so
+ * a learner arriving here has no cluster, no kubectl, and no images loaded.
+ * Every command after that assumes `make k8s` has run, and every one of them
+ * was run against that three-node kind cluster before being written down.
  */
 
 export const CHAPTER_5: Lesson[] = [
@@ -23,20 +24,39 @@ export const CHAPTER_5: Lesson[] = [
       "That's genuinely it. Self-healing isn't a feature bolted on; it's an unavoidable consequence of continuously enforcing a declaration.",
       "The vocabulary you need, and no more:",
       "• A POD is the smallest unit: almost always one container plus Kubernetes bookkeeping. Where you'd say \"container\", Kubernetes says \"pod\".\n• A DEPLOYMENT is the declaration: which image, how many copies, how to update them. This is what you actually write.\n• A SERVICE is a stable name and address in front of a changing set of pods. Pods come and go; the service name doesn't.\n• A NODE is one machine in the cluster.",
-      "You have a real cluster running locally right now: three machines' worth, each one itself a container, which is a pleasant thing to think about. Let's look at it.",
+      "Everything so far ran on Docker alone. This chapter needs two more tools and an actual cluster, so the first two steps build one: three machines' worth, each machine itself a container, which is a pleasant thing to think about. The first run takes a few minutes; after that it is already there.",
     ],
     steps: [
       {
         instruction:
-          "First make sure the cluster has this project's services on it. Safe to run even if they are already there: it just confirms the desired state.",
+          "Chapter 0 said Kubernetes tools would come later. Later is now: check you have both.",
         command:
-          "cd ~/Documents/containerquest && kubectl apply -k infra/k8s/base",
+          "for t in kubectl kind; do printf '  %-8s ' $t; command -v $t >/dev/null && echo ok || echo MISSING; done",
+        commandParts: [
+          { piece: "kubectl", meaning: "The Kubernetes client: every command in this chapter is kubectl" },
+          { piece: "kind", meaning: "Runs a cluster as containers on your machine, no cloud account" },
+          { piece: "command -v", meaning: "Is this program on your PATH?" },
+        ],
+        ifItFails:
+          "MISSING on either one means it is not installed yet. On a Mac: `brew install kubectl kind`. Both are single binaries and neither needs an account, a cloud provider, or a credit card. `make doctor` from the project root checks these plus everything else the project uses.",
+        saw: "Two \"ok\" lines. kubectl is the client you will type for the rest of the course; kind is what builds the cluster it talks to.",
+        check: { kind: "manual", label: "Both tools are installed" },
+      },
+      {
+        instruction:
+          "Now build the cluster and put this project on it. One command does all three parts, and it is safe to re-run at any point in this chapter.",
+        command: "cd ~/Documents/containerquest && make k8s",
         commandParts: [
           { piece: "cd ~/Documents/containerquest", meaning: "Project root" },
-          { piece: "kubectl apply -k infra/k8s/base", meaning: "Apply the Kustomize base (deploy the fleet to the cluster)" },
+          { piece: "make k8s", meaning: "Three steps in one: create the cluster, load the images, apply the manifests" },
+          { piece: "(create)", meaning: "kind creates a 3-node cluster, or skips if you already have one" },
+          { piece: "(load)", meaning: "Builds the images and hands them straight to the cluster, so no registry is involved" },
+          { piece: "(apply)", meaning: "kubectl apply -k infra/k8s/base: the declaration itself" },
         ],
-        saw: "Either \"created\" or \"unchanged\" next to each item. Note that running it twice is harmless: you described what should exist, and Kubernetes compared that against reality. That is the declarative idea in its simplest form.",
-        check: { kind: "manual", label: "Applied without errors" },
+        ifItFails:
+          "\"connection refused\" or \"couldn't get current server API group list\" means there is no cluster yet, so run this step again and watch the create phase. Pods stuck in ImagePullBackOff mean the cluster has the manifests but not the images: `make load` fixes exactly that, because these images exist only on your machine and were never pushed anywhere.",
+        saw: "The cluster is created (or reported as already existing), three images are copied onto each node, and each item comes back \"created\" or \"unchanged\". That last word is the point: running it twice is harmless, because you described what should exist rather than issuing commands. That is the declarative idea in its simplest form, and it is why this is the step to re-run whenever anything in this chapter looks wrong.",
+        check: { kind: "manual", label: "Cluster is up and the manifests applied" },
       },
       {
         instruction: "See the machines in your cluster.",
@@ -55,7 +75,7 @@ export const CHAPTER_5: Lesson[] = [
           { piece: "-n container-quest", meaning: "This project's namespace" },
           { piece: "-o wide", meaning: "Also show which node each pod runs on" },
         ],
-        saw: "Five pods spread across the two worker nodes. Nobody chose that placement: you declared how many copies you wanted, and the scheduler decided where they'd fit. Note the pod names: a deployment name, then two random-looking parts. Pods are disposable and never reuse a name.",
+        saw: "Five pods, and the NODE column shows them sitting across both workers. Nobody chose that placement: you declared how many copies you wanted, and the scheduler decided where they'd fit. It prefers to spread copies of the same deployment around, which is why you usually see this, but it is a preference among several, not a promise; when you need spreading guaranteed you say so explicitly with topology spread constraints or anti-affinity rules. Note the pod names too: a deployment name, then two random-looking parts. Pods are disposable and never reuse a name.",
         check: { kind: "manual", label: "I saw pods on different nodes" },
       },
       {
@@ -179,7 +199,7 @@ export const CHAPTER_5: Lesson[] = [
     title: "Scaling: one number, no port conflicts",
     minutes: 7,
     concept: [
-      "In Chapter 4 you tried to run three copies of a service under Compose and it failed on a port collision. Two containers cannot both own port 3001 on one machine, and Compose has nothing to put in front of them.",
+      "In Chapter 4 you tried to run three copies of a service under Compose and it failed on a port collision. Two containers cannot both own port 3001 on one machine, and Compose has no load-balancer object to put in front of them: you would have to drop the fixed host port and run a proxy you configured yourself.",
       "Kubernetes solves this with the SERVICE object. A service is a stable name with a load balancer behind it. Requests to that name get distributed across whichever pods are currently healthy and ready. Pods appear and disappear; the service tracks them automatically.",
       "So scaling really is one number. Change the replica count and Kubernetes creates or removes pods, registers them with the service, and starts routing to them. No ports to allocate, no load balancer to configure, no config to update anywhere.",
       "The readiness probe from Chapter 4 becomes important here. A brand new pod isn't added to the load balancer until it reports ready. That's what makes scaling up safe: traffic never reaches a pod that's still starting.",
@@ -210,7 +230,7 @@ export const CHAPTER_5: Lesson[] = [
           { piece: "kubectl get pods -l app=compute -o wide", meaning: "See names and nodes" },
           { piece: "awk ...", meaning: "Print a compact name + node list" },
         ],
-        saw: "Five pods, spread across both worker nodes. The scheduler placed them based on available resources: you never specified where. Compare with Compose, where three copies couldn't even start.",
+        saw: "Five pods, and you never said a word about where they should go: the scheduler placed each one on a worker with room for it, and its scoring prefers to spread copies of the same deployment, so they normally land on both. If you need that spread guaranteed rather than merely likely, that is what topology spread constraints and anti-affinity rules are for. Compare with Compose, where the second copy could not even start.",
         check: { kind: "manual", label: "I saw five pods across nodes" },
       },
       {
@@ -229,7 +249,7 @@ export const CHAPTER_5: Lesson[] = [
         commandParts: [
           { piece: "kubectl scale ... --replicas=2", meaning: "Scale back down to two" },
         ],
-        saw: "Three pods are terminated and removed from the load balancer first, so no request is ever sent to a pod that's shutting down. Scaling down is as safe as scaling up.",
+        saw: "Three pods are marked for termination and pulled out of the Service's endpoint list, so new requests stop being routed to them almost immediately. \"Almost\" is doing real work in that sentence: the removal and the shutdown signal happen in parallel, so a pod that quits the instant it is told to can still drop a request it had already accepted. Handle the stop signal and finish what you started, and scaling down is as safe as scaling up.",
         check: { kind: "manual", label: "Scaled back to two" },
       },
     ],
@@ -248,9 +268,10 @@ export const CHAPTER_5: Lesson[] = [
       "Kubernetes replaces pods gradually instead, governed by two settings you get to choose:",
       "maxSurge: how many EXTRA pods may exist during the update. Set to 1, you may temporarily run one more than you asked for.",
       "maxUnavailable: how many fewer than desired you'll tolerate. Set to 0, capacity never drops below the target.",
-      "With surge 1 and unavailable 0, the sequence is: start one new pod, WAIT for its readiness probe to pass, then retire one old pod, repeat. Capacity never dips. Old and new run side by side for a few seconds, which is worth knowing, because it means your two versions must be able to coexist briefly. Database migrations in particular need care for exactly this reason.",
+      "With surge 1 and unavailable 0, the sequence is: start one new pod, WAIT for its readiness probe to pass, then retire one old pod, repeat. The number of ready pods never drops below what you asked for. Old and new run side by side for a few seconds, which is worth knowing, because it means your two versions must be able to coexist briefly. Database migrations in particular need care for exactly this reason.",
       "If a new pod never becomes ready, the rollout stops and waits rather than continuing to destroy working pods. A broken deploy stalls instead of taking you down: that behavior alone justifies a lot of the complexity.",
-      "This is the payoff for the readiness probe from Chapter 4. Without it Kubernetes couldn't tell whether a new pod was actually working, and the whole no-downtime guarantee would be a guess.",
+      "This is the payoff for the readiness probe from Chapter 4. Without it Kubernetes couldn't tell whether a new pod was actually working, and holding capacity steady would be a guess.",
+      "One honest caveat, because \"zero downtime\" gets said far too casually. Kubernetes holds capacity steady; it cannot make YOUR program finish the requests it already has. When a pod is retired it is pulled from the Service and sent SIGTERM, and what happens next is your code's business: an app that finishes in-flight requests and then exits drops nothing, while one that dies instantly on SIGTERM fails every request it was mid-way through. The rollout mechanism is half of no-downtime deploys; graceful shutdown in the application is the other half.",
     ],
     steps: [
       {
@@ -287,7 +308,7 @@ export const CHAPTER_5: Lesson[] = [
           { piece: "kubectl rollout status deployment/compute", meaning: "Block until the rollout finishes (or times out)" },
           { piece: "--timeout=90s", meaning: "Fail clearly if it takes too long" },
         ],
-        saw: "\"successfully rolled out\". Every pod now runs the new configuration, and no request failed at any point during the process.",
+        saw: "\"successfully rolled out\". Every pod now runs the new configuration. Be precise about what that proves: the deployment converged, and because maxUnavailable is 0 the count of ready pods never fell below the target. It does not prove that zero requests failed, because nothing was sending any. Demonstrating that claim takes traffic running through the Service for the whole rollout plus an app that drains on SIGTERM, which is exactly what a load test during a deploy is for.",
         check: { kind: "manual", label: "I saw successfully rolled out" },
       },
       {
@@ -304,11 +325,11 @@ export const CHAPTER_5: Lesson[] = [
     recap: [
       "You changed a deployment's declaration and watched Kubernetes replace every pod without being told how.",
       "You sampled the pods mid-rollout and saw MORE than you asked for, which is maxSurge: new ones come up before old ones go down.",
-      "You confirmed the rollout completed and that capacity never dropped below the target at any point.",
+      "You confirmed the rollout converged, with maxUnavailable 0 keeping the ready count from dropping below the target the whole way through.",
       "You rolled it back with one command, which is the thing worth having practiced before the day you need it.",
     ],
     takeaway:
-      "Rolling updates add new pods before removing old ones, gated on readiness, so deploys have no downtime and a broken deploy stalls instead of taking you down.",
+      "Rolling updates add new pods before removing old ones, gated on readiness, so capacity holds through a deploy and a broken deploy stalls instead of taking you down. Whether a request actually survives also depends on your app draining on SIGTERM.",
   },
 
   {

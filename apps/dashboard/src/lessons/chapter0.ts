@@ -86,7 +86,7 @@ export const CHAPTER_0: Lesson[] = [
       },
       {
         instruction:
-          "You do not need Kubernetes for Getting Started. When we reach Chapter 5 we will install or confirm kubectl then. For now, just confirm you are ready to use Docker.",
+          "You do not need Kubernetes for Getting Started, and you will not need it until Chapter 5. When you get there, its first lesson checks for the two extra tools (`kubectl` and `kind`) and builds the cluster with one command, so there is nothing to install now. For now, just confirm you are ready to use Docker.",
         check: { kind: "manual", label: "Ready to use Docker only" },
       },
     ],
@@ -1100,7 +1100,7 @@ cat ~/quest-hello/Dockerfile`,
           { piece: "docker exec ... cat /etc/os-release", meaning: "What Linux the container believes it is" },
           { piece: "sw_vers", meaning: "What your actual machine is" },
         ],
-        saw: "Alpine Linux inside, macOS outside, at the same moment, on one machine. The container is not running a copy of macOS and your Mac is not running Alpine. There is one kernel underneath doing the real work, and the container has been handed a Linux-shaped view of the world.",
+        saw: "Alpine Linux inside, macOS outside, at the same moment, on one machine. The container is not running a copy of macOS and your Mac is not running Alpine. Containers are a Linux feature, so on a Mac there is a small Linux VM in the background (that is what OrbStack or Docker Desktop is actually doing) and your containers are processes inside it. One VM, booted once, shared by all of them: not one per container, which is the whole point. On a Linux machine that layer isn't there at all and the container runs directly on the machine's own kernel. What travels in the image either way is the files, never the kernel.",
         check: { kind: "manual", label: "I saw Alpine inside and macOS outside" },
       },
       {

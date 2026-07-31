@@ -89,7 +89,7 @@ export const CHAPTER_2: Lesson[] = [
           { piece: "container-quest-compute-1", meaning: "The C service container" },
           { piece: "sh", meaning: "Try to open a shell (this image has none - that is the point)" },
         ],
-        saw: "It failed: there is no `sh` to run. That error IS the correct result. There is no shell in that image because there's no operating system at all. Practically: you can't debug it by going inside, and an attacker can't either. That's the trade.",
+        saw: "It failed: there is no `sh` to run. That error IS the correct result. There is no shell in that image because there are no operating-system files in it at all: just the one program. Practically: you can't debug it by going inside, and an attacker can't either. That's the trade.",
         check: { kind: "manual", label: "I saw it fail to find a shell" },
       },
       {
@@ -99,14 +99,14 @@ export const CHAPTER_2: Lesson[] = [
           { piece: "docker exec ... sh -c", meaning: "Run a shell one-liner inside the AI container" },
           { piece: "cat /etc/os-release | head -2", meaning: "Show which Linux the container thinks it is" },
         ],
-        saw: "Debian. The Python image carries a real Linux distribution because the Python interpreter needs it. Two containers on the same machine, one with an entire OS inside and one with literally nothing; Docker runs both identically.",
+        saw: "Debian. The Python image carries a whole Linux distribution's files because the Python interpreter needs them: libraries, a package manager, /etc, a shell. Worth naming the one thing even this image does NOT contain, though: a kernel. No image ever does. Both of these containers borrow the same Linux kernel from underneath, which is exactly why one can hold a distribution's worth of files and the other a single 187 kB binary, and both start in milliseconds.",
         check: { kind: "manual", label: "I saw the Debian version" },
       },
     ],
     recap: [
       "You compared a finished image against the build environment it came from, and saw the toolchain was over a hundred times larger than the result.",
-      "You tried to open a shell in the C service and it failed, because there is no operating system in that image at all.",
-      "You saw the Python service does carry a full Debian, and know why: an interpreter needs one and a compiled binary does not.",
+      "You tried to open a shell in the C service and it failed, because there are no operating-system files in that image at all.",
+      "You saw the Python service does carry a full Debian userspace, and know why: an interpreter needs one and a compiled binary does not. Neither image contains a kernel; that comes from underneath.",
       "You can now explain why an image with no shell is harder to attack and harder to debug, which is the same fact from two directions.",
     ],
     takeaway:
@@ -148,20 +148,24 @@ export const CHAPTER_2: Lesson[] = [
       },
       {
         instruction:
-          "Now change one line of source code (just a comment) and rebuild. This edits the file, rebuilds, then puts it back exactly as it was.",
+          "Now change one line of source code (just a comment) and rebuild. This copies the file aside first, appends a comment, rebuilds, then restores the original byte for byte.",
         command:
-          "cd ~/Documents/containerquest && echo '// cache test' >> services/util/main.go && time docker build -q -t quest/util:dev services/util && git checkout services/util/main.go",
+          "cd ~/Documents/containerquest && cp -p services/util/main.go /tmp/quest-main.go.bak && echo \"// cache test $(date +%s)\" >> services/util/main.go; time docker build -q -t quest/util:dev services/util; mv /tmp/quest-main.go.bak services/util/main.go && echo 'main.go restored'",
         commandParts: [
-          { piece: "echo '// cache test' >> services/util/main.go", meaning: "Tiny source change (then you undo it later)" },
-          { piece: "time docker build ...", meaning: "Rebuild: only changed layers should redo" },
+          { piece: "cp -p ... /tmp/quest-main.go.bak", meaning: "Keep the exact original, so restoring cannot lose your own edits" },
+          { piece: "echo \"// cache test $(date +%s)\" >>", meaning: "Append a comment with the current timestamp: unique every run, so the cache really is invalidated" },
+          { piece: "; (not &&)", meaning: "Semicolons: the restore runs even if the build fails" },
+          { piece: "mv ... services/util/main.go", meaning: "Put the original back" },
         ],
-        saw: "Noticeably slower: several seconds. Changing the source invalidated the layer that copies source in, so the compile had to run again. But notice what did NOT happen: it didn't re-download the Go dependencies, because that layer sits earlier in the file and its inputs were untouched. That's the ordering rule paying off.",
+        ifItFails:
+          "If anything goes wrong mid-way, your original file is still at /tmp/quest-main.go.bak: `mv /tmp/quest-main.go.bak services/util/main.go` puts it back. Note what this deliberately does NOT do: `git checkout` on that file would also throw away any uncommitted work of your own in it.",
+        saw: "Noticeably slower: several seconds against well under one. Changing the source invalidated the layer that copies source in, so the compile had to run again. The timestamp in that comment is what makes this honest: append the same text twice and the second build hits the cache for the changed layer too, and you would measure nothing. Notice also what did NOT happen: it didn't re-download the Go dependencies, because that layer sits earlier in the file and its inputs were untouched. That's the ordering rule paying off. \"main.go restored\" at the end confirms your working tree is exactly as it was.",
         check: { kind: "manual", label: "The second build took longer" },
       },
     ],
     recap: [
       "You timed a rebuild with nothing changed and watched it finish almost instantly, entirely from cache.",
-      "You changed one line of source, rebuilt, and measured the difference yourself rather than being told about it.",
+      "You changed one line of source, rebuilt, and measured the difference yourself rather than being told about it, then watched the file get restored exactly as it was.",
       "You saw what did NOT happen: the dependency download did not repeat, because that layer sits earlier and its inputs were untouched.",
       "This is the same ordering rule you applied by hand in Chapter 0 when package.json was copied before server.js. Now you have the timings behind it.",
     ],
