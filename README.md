@@ -10,7 +10,7 @@ production platform: eight services written in five languages, wired together
 with Compose and deployed to a real local Kubernetes cluster. Every lesson is a
 command you actually run, verified against services that actually change.
 
-**38 lessons. 7 chapters. 8 containers. 5 languages.**
+**40 lessons. 7 chapters. 8 containers. 5 languages.**
 
 Repository: <https://github.com/porterwagen/containerquest>
 
@@ -132,7 +132,7 @@ to any codebase.
 | 00 | Getting started | 13 |
 | 01 | What a container actually is | 4 |
 | 02 | Images and how they're built | 4 |
-| 03 | Networking, config, and data | 4 |
+| 03 | Networking, Compose, and data | 6 |
 | 04 | When things break | 4 |
 | 05 | Kubernetes | 6 |
 | 06 | Ship your own app | 3 |

@@ -89,6 +89,11 @@ export const CHAPTER_5: Lesson[] = [
         check: { kind: "manual", label: "I saw the deployments" },
       },
     ],
+    recap: [
+      "You confirmed kubectl and kind were installed, then built (or reused) the local cluster and loaded this project onto it.",
+      "You listed nodes and pods and saw work placed across workers without choosing machines by hand.",
+      "You inspected a Deployment as a declaration of desired state, which is the loop everything else in the chapter uses.",
+    ],
     takeaway:
       "You declare the desired state; Kubernetes continuously makes reality match it. Everything else follows from that one loop.",
   },
@@ -132,6 +137,10 @@ export const CHAPTER_5: Lesson[] = [
         saw: "status 200. Cluster networks are private by default: nothing inside is reachable from outside unless deliberately exposed. port-forward punches a temporary hole for you, and it's the single command you'll use most while debugging a real cluster.",
         check: { kind: "manual", label: "I saw status 200" },
       },
+    ],
+    recap: [
+      "You reached compute inside the cluster through a port-forward and read /meta with real podName and nodeName filled in.",
+      "You contrasted that with Compose, where those fields were null: same image, more identity injected by the platform.",
     ],
     takeaway:
       "Kubernetes injects a pod's own identity and location into it, which is what makes it possible to trace behavior back to one specific instance.",
@@ -187,6 +196,11 @@ export const CHAPTER_5: Lesson[] = [
         saw: "Two pods again. One has a name you have not seen before, and its age is a few seconds. Nobody told Kubernetes to do that. You declared two, reality became one, and the loop closed the gap on its own. Notice the deleted pod did not return: a NEW pod was created. Pods are replaced, never revived.",
         check: { kind: "manual", label: "A new pod appeared on its own" },
       },
+    ],
+    recap: [
+      "You noted the current compute pods and their names before changing anything.",
+      "You deleted one pod outright and, within seconds, saw a replacement appear without running a start command.",
+      "You proved the controller was matching desired replica count, not resurrecting the old pod by name.",
     ],
     takeaway:
       "Delete a pod and a new one appears unprompted, because the declaration still says how many should exist. Pods are replaced, never resurrected.",
@@ -252,6 +266,11 @@ export const CHAPTER_5: Lesson[] = [
         saw: "Three pods are marked for termination and pulled out of the Service's endpoint list, so new requests stop being routed to them almost immediately. \"Almost\" is doing real work in that sentence: the removal and the shutdown signal happen in parallel, so a pod that quits the instant it is told to can still drop a request it had already accepted. Handle the stop signal and finish what you started, and scaling down is as safe as scaling up.",
         check: { kind: "manual", label: "Scaled back to two" },
       },
+    ],
+    recap: [
+      "You scaled a Deployment to five replicas with one command and watched new pods schedule without host port collisions.",
+      "You listed Service endpoints and saw multiple pod IPs behind one stable name.",
+      "You scaled back down to two, proving replica count is just another part of the desired state.",
     ],
     takeaway:
       "A Service is a stable name with load balancing behind it, so scaling is one number and pods can come and go freely.",
@@ -381,6 +400,11 @@ export const CHAPTER_5: Lesson[] = [
         saw: "`describe` is the workhorse command for debugging Kubernetes. It shows the pod's configuration, its current state, and the events affecting it, all in one place. When something is wrong and you don't know why, this is the command.",
         check: { kind: "manual", label: "I saw the pod description" },
       },
+    ],
+    recap: [
+      "You read the liveness and readiness probes declared on a running compute pod.",
+      "You checked namespace events, where probe failures and restarts show up when something goes wrong.",
+      "You described a full pod and saw probe config and recent history in one place, including how checks run from outside the container.",
     ],
     takeaway:
       "Kubernetes probes run from outside the container, so even an image with no shell can be health-checked. Liveness restarts; readiness diverts.",

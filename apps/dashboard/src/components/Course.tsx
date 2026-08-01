@@ -15,7 +15,9 @@ import {
   type Scaffold,
   type Step,
 } from "@/lessons";
+import { Appendix } from "./Appendix";
 import { Replay, getRecording } from "./Replay";
+import { TheMap } from "./TheMap";
 import type { Mode } from "@/lib/control";
 import { experienceForLesson } from "@/lib/dashboardExperiments";
 
@@ -148,16 +150,28 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
     });
   }, [hydrated, progress.current]);
 
+  const [panel, setPanel] = useState<"lesson" | "appendix">("lesson");
+
   const goTo = useCallback((id: string) => {
     pendingScrollRef.current = true;
     pendingStepRef.current = null;
     setReturnExperience(undefined);
+    setPanel("lesson");
     const url = new URL(window.location.href);
     url.searchParams.set("lesson", id);
     url.searchParams.delete("step");
     url.searchParams.delete("fromExperiment");
     window.history.pushState(null, "", url);
     setProgress((p) => ({ ...p, current: id }));
+  }, []);
+
+  const openAppendix = useCallback(() => {
+    setPanel("appendix");
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        lessonTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }, []);
 
   /** Unmark the current lesson and re-run its steps from a fresh baseline. */
@@ -191,51 +205,68 @@ export function Course({ mode = "live" }: { mode?: Mode }) {
   }, []);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-0">
       <Sidebar
         current={lesson.id}
         currentTitle={lesson.title}
         done={progress.done}
+        appendixOpen={panel === "appendix"}
         onSelect={goTo}
+        onOpenAppendix={openAppendix}
         onClearLesson={() => clearLesson(lesson.id)}
         onResetProgress={resetProgress}
         mode={mode}
       />
 
-      <div ref={lessonTopRef} className="min-w-0 scroll-mt-3">
-        <LessonView
-          key={`${lesson.id}-${lessonEpoch}`}
-          lesson={lesson}
-          done={isDone}
-          mode={mode}
-          onComplete={() => complete(lesson.id)}
-          onClearLesson={() => clearLesson(lesson.id)}
-          relatedExperience={experienceForLesson(lesson.id)}
-          returnExperience={returnExperience}
-        />
+      {/* Extra left padding + hairline on lg+ so the dense lesson body
+          doesn't sit flush against the course outline. */}
+      <div
+        ref={lessonTopRef}
+        className="min-w-0 scroll-mt-3 lg:border-l lg:border-edge/80 lg:pl-10 xl:pl-12"
+      >
+        {panel === "appendix" ? (
+          <Appendix />
+        ) : (
+          <>
+            <LessonView
+              key={`${lesson.id}-${lessonEpoch}`}
+              lesson={lesson}
+              done={isDone}
+              mode={mode}
+              onComplete={() => complete(lesson.id)}
+              onClearLesson={() => clearLesson(lesson.id)}
+              relatedExperience={experienceForLesson(lesson.id)}
+              returnExperience={returnExperience}
+            />
 
-        <nav className="mt-6 flex items-center justify-between gap-3 border-t border-edge pt-5">
-          <button
-            onClick={() => index > 0 && goTo(LESSONS[index - 1]!.id)}
-            disabled={index === 0}
-            className="rounded-md border border-edge px-3 py-2 text-[13px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink disabled:opacity-30"
-          >
-            ← Previous
-          </button>
+            <nav className="mt-6 flex items-center justify-between gap-3 border-t border-edge pt-5">
+              <button
+                onClick={() => index > 0 && goTo(LESSONS[index - 1]!.id)}
+                disabled={index === 0}
+                className="rounded-md border border-edge px-3 py-2 text-[13px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink disabled:opacity-30"
+              >
+                ← Previous
+              </button>
 
-          {index < LESSONS.length - 1 ? (
-            <button
-              onClick={() => goTo(LESSONS[index + 1]!.id)}
-              className="rounded-md border border-beam bg-beam/10 px-4 py-2 text-[13px] text-beam transition-colors hover:bg-beam/20"
-            >
-              Next lesson →
-            </button>
-          ) : (
-            <span className="text-[13px] text-ink-faint">
-              End of the written chapters. More coming.
-            </span>
-          )}
-        </nav>
+              {index < LESSONS.length - 1 ? (
+                <button
+                  onClick={() => goTo(LESSONS[index + 1]!.id)}
+                  className="rounded-md border border-beam bg-beam/10 px-4 py-2 text-[13px] text-beam transition-colors hover:bg-beam/20"
+                >
+                  Next lesson →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openAppendix}
+                  className="rounded-md border border-beam bg-beam/10 px-4 py-2 text-[13px] text-beam transition-colors hover:bg-beam/20"
+                >
+                  Appendix: Docker commands →
+                </button>
+              )}
+            </nav>
+          </>
+        )}
       </div>
     </div>
   );
@@ -245,7 +276,9 @@ function Sidebar({
   current,
   currentTitle,
   done,
+  appendixOpen,
   onSelect,
+  onOpenAppendix,
   onClearLesson,
   onResetProgress,
   mode,
@@ -253,7 +286,9 @@ function Sidebar({
   current: string;
   currentTitle: string;
   done: string[];
+  appendixOpen: boolean;
   onSelect: (id: string) => void;
+  onOpenAppendix: () => void;
   onClearLesson: () => void;
   onResetProgress: () => void;
   mode: Mode;
@@ -268,8 +303,17 @@ function Sidebar({
     setMenuOpen(false);
   };
 
+  const handleAppendix = () => {
+    onOpenAppendix();
+    setMenuOpen(false);
+  };
+
   return (
-    <aside className="lg:sticky lg:top-6 lg:self-start">
+    // Desktop: stick in the viewport and scroll *inside* the rail when the
+    // outline is taller than the window. Without max-height + overflow, a
+    // sticky sidebar longer than the viewport clips its own footer (appendix,
+    // reset) and you can only free it by scrolling the lesson column.
+    <aside className="lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-6">
       {/* Mobile accordion header — hidden from lg up */}
       <button
         type="button"
@@ -285,7 +329,9 @@ function Sidebar({
               {done.length}/{LESSONS.length}
             </span>
           </div>
-          <div className="mt-0.5 truncate text-[13px] text-ink">{currentTitle}</div>
+          <div className="mt-0.5 truncate text-[13px] text-ink">
+            {appendixOpen ? "Docker command sheet" : currentTitle}
+          </div>
         </div>
         <span
           className="shrink-0 text-ink-faint transition-transform duration-200"
@@ -332,7 +378,7 @@ function Sidebar({
               <ul className="space-y-0.5">
                 {ch.lessons.map((l, i) => {
                   const isDone = done.includes(l.id);
-                  const isCurrent = l.id === current;
+                  const isCurrent = !appendixOpen && l.id === current;
                   // A long chapter reads as a few short arcs rather than one
                   // undifferentiated wall. Drawn whenever the label changes.
                   const newSection = l.section && l.section !== ch.lessons[i - 1]?.section;
@@ -373,6 +419,22 @@ function Sidebar({
             </div>
           );
         })}
+
+        <div className="mb-1 mt-2 border-t border-edge pt-4">
+          <div className="mb-1.5 px-0 text-[11px] font-medium text-ink-dim">Appendix</div>
+          <button
+            type="button"
+            onClick={handleAppendix}
+            className={`flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+              appendixOpen
+                ? "bg-panel-2 text-ink"
+                : "text-ink-faint hover:bg-panel hover:text-ink-dim"
+            }`}
+          >
+            <span className="shrink-0 font-mono text-[10px] text-beam">⌘</span>
+            <span className="min-w-0 flex-1 truncate">Docker command sheet</span>
+          </button>
+        </div>
 
         <p className="mt-5 border-t border-edge pt-4 text-[11.5px] leading-relaxed text-ink-faint">
           {mode === "demo"
@@ -506,6 +568,12 @@ function LessonView({
           <ConceptBlock key={i} text={p} />
         ))}
       </div>
+
+      {lesson.visual === "the-map" && (
+        <div className="mt-6">
+          <TheMap />
+        </div>
+      )}
 
       <div className="mt-7 space-y-3">
         {lesson.steps.map((step, i) => (

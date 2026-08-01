@@ -68,9 +68,11 @@ export const CHAPTER_0: Lesson[] = [
       "A CONTAINER is one running instance of a packaged program: closer to a process than to a full computer. An IMAGE is the template that instance is made from (files + how to start). Images sit on disk. Containers run (or sit stopped after they exit).",
       "Think recipe and meal, or class and object. One image, many containers.",
       "A REGISTRY (like Docker Hub) stores images so other machines can download them. DOCKER is the tool on your machine that builds images and runs containers.",
-      "Later in this course you will meet DOCKER COMPOSE (several containers defined together on one machine) and, much later, KUBERNETES (keeping many containers healthy across machines). You do not need those tools yet. For the next few lessons, Docker alone is enough.",
+      "Later in this course you will meet DOCKER COMPOSE (a YAML recipe for several containers on one machine; Chapter 3 teaches you to read and write it) and, much later, KUBERNETES (keeping many containers healthy across machines). You do not need those tools yet. For the next few lessons, Docker alone is enough.",
+      "The picture below is the whole course at three zoom levels: one container, then one machine full of them, then many machines. You are not expected to absorb it now. Come back to it whenever a new tool arrives and you want to know where it sits.",
       "Next: actually run one container so the words stop being abstract.",
     ],
+    visual: "the-map",
     steps: [
       {
         instruction:

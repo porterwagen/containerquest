@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Container Quest",
+  title: "Container Quest β",
   description:
-    "Learn Docker and Kubernetes by running a real eight-container system and breaking it on purpose.",
+    "Learn Docker and Kubernetes by running a real eight-container system and breaking it on purpose. Public beta.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "16x16 32x32" },

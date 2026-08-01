@@ -113,6 +113,11 @@ ls -1`,
         check: { kind: "manual", label: "Cleaned up" },
       },
     ],
+    recap: [
+      "You wrote a small app and Dockerfile of your own, not only ran images this project already built.",
+      "You built an image from that folder, ran it with a published port, and proved you could reach it.",
+      "You removed the running container while keeping the image ready for the next lesson on the cluster.",
+    ],
     takeaway:
       "A Dockerfile answers four questions: what it runs on, what files it needs, how to install dependencies, how to start. That's it.",
     source: {
@@ -196,6 +201,11 @@ ls -1`,
         check: { kind: "manual", label: "I saw both pod names" },
       },
     ],
+    recap: [
+      "You loaded your image into the kind cluster so nodes could run it without a public registry.",
+      "You created a Deployment with two replicas and watched your pods become Ready.",
+      "You exposed them with a Service, reached the app through port-forward, and also called it by Service name from inside the cluster.",
+    ],
     takeaway:
       "Get the image to the cluster, declare a Deployment and a Service, and everything Kubernetes does for the built-in services now works for yours too. Note that port-forward pins to one pod: real traffic goes through the Service.",
   },
@@ -236,6 +246,10 @@ ls -1`,
         saw: "Deployments, pods, services, and replicasets: the objects you now understand. When you started this course, none of these words meant anything.",
         check: { kind: "manual", label: "I looked at the cluster" },
       },
+    ],
+    recap: [
+      "You cleaned up the demo Deployment and Service so the cluster was tidy, without tearing down the whole learning environment.",
+      "You took a final look at the cluster still running the course fleet, with a clear list of what you can do next and when Compose alone is enough.",
     ],
     takeaway:
       "You can containerize an app, deploy it in multiple copies behind one name, scale it, and update it without dropping capacity. Next: ConfigMaps, Ingress, resource limits, scheduling rules, and knowing when a single server is the better answer.",

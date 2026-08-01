@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Mode } from "@/lib/control";
 import { LESSONS } from "@/lessons";
+import { BrandMark } from "./BrandMark";
 import { RECORDED_AT } from "./Replay";
 
 /**
@@ -36,12 +37,9 @@ export function AppHeader({ current, mode }: { current: "learn" | "dashboard"; m
     <header className="mb-7">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/" className="group flex items-center gap-2.5">
-            <span className="pulse h-2 w-2 rounded-full bg-live text-live" />
-            <h1 className="text-[22px] font-medium tracking-tight text-ink transition-colors group-hover:text-beam">
-              Container Quest
-            </h1>
-          </Link>
+          <h1>
+            <BrandMark />
+          </h1>
           <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink-dim">
             Learn Docker and Kubernetes by running a real system and breaking it on purpose.
             Eight containers, five languages, {LESSONS.length} lessons.

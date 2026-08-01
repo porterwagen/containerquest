@@ -141,6 +141,15 @@ export interface Step {
   check: Check;
 }
 
+/**
+ * A diagram a lesson can ask for, rendered between the concept and the steps.
+ *
+ * Only for lessons whose subject is how pieces fit together, where prose has to
+ * describe a shape the reader cannot see. Named rather than imported so lesson
+ * data stays plain and serializable.
+ */
+export type LessonVisual = "the-map";
+
 export interface Lesson {
   id: string;
   chapter: number;
@@ -156,6 +165,8 @@ export interface Lesson {
   minutes: number;
   /** The idea, before any command. Paragraphs of plain prose. */
   concept: string[];
+  /** Optional diagram, shown after the concept and before the steps. */
+  visual?: LessonVisual;
   steps: Step[];
   /**
    * "What you just did", shown once the lesson is complete and on every later

@@ -49,6 +49,10 @@ export const CHAPTER_2: Lesson[] = [
         check: { kind: "manual", label: "I compared the sizes" },
       },
     ],
+    recap: [
+      "You inspected the Go service image layer by layer and saw each build instruction as its own row.",
+      "You compared total sizes across the five services and saw how much those stacks can differ for programs that all answer HTTP.",
+    ],
     takeaway:
       "An image is a stack of layers. Identical layers are shared between images, and unchanged layers are reused on rebuild, which is why build structure determines build speed.",
   },
@@ -211,6 +215,10 @@ export const CHAPTER_2: Lesson[] = [
         saw: "A version number, printed by a Linux system that started, ran one command, and vanished, in well under a second. That speed is the entire practical argument for containers.",
         check: { kind: "manual", label: "I saw the version" },
       },
+    ],
+    recap: [
+      "You pulled a real image from Docker Hub onto your machine the same way production hosts receive software.",
+      "You ran that image and printed its version, proving a registry is how an image leaves one laptop and shows up on another.",
     ],
     takeaway:
       "A registry stores images so other machines can pull them. Tag with real version numbers, never rely on `latest`.",

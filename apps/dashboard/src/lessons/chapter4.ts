@@ -83,6 +83,11 @@ export const CHAPTER_4: Lesson[] = [
         check: { kind: "manual", label: "Removed" },
       },
     ],
+    recap: [
+      "You started a container that failed on purpose and watched it disappear from the running list.",
+      "You found it among stopped containers with its exit code, then read the logs it left before dying.",
+      "You inspected how it died (not only that it did), then cleaned the broken container up.",
+    ],
     takeaway:
       "Is it running, what did it say, what was the exit code, then go inside. Logs answer most of it.",
   },
@@ -138,6 +143,11 @@ export const CHAPTER_4: Lesson[] = [
         saw: "The count went up by one and the status is running again. Nobody intervened. The restart policy noticed the exit and started it back up, and the service is already serving requests. That's the simplest possible form of self-healing, and Kubernetes is essentially this idea taken much further.",
         check: { kind: "manual", label: "The count went up and it's running" },
       },
+    ],
+    recap: [
+      "You noted a service's restart count before anything went wrong.",
+      "You crashed that service on purpose and watched the restart policy bring the same container role back.",
+      "You confirmed the restart counter moved, which is how Compose and Docker show recovery on one machine.",
     ],
     takeaway:
       "A restart policy revives a crashed container on the same machine. If the machine dies, nothing revives it, which is the gap Kubernetes fills.",
@@ -219,7 +229,7 @@ export const CHAPTER_4: Lesson[] = [
     title: "Where Compose runs out of road",
     minutes: 7,
     concept: [
-      "You now know enough Docker to run a real system. So it's worth being precise about what Compose genuinely cannot do, because that list is exactly the argument for Kubernetes, and if you don't hit these problems, you may not need Kubernetes at all.",
+      "You now know enough Docker, and enough Compose, to run a real system. Chapter 3 showed you how to read and write the recipe. So it's worth being precise about what Compose genuinely cannot do, because that list is exactly the argument for Kubernetes, and if you don't hit these problems, you may not need Kubernetes at all.",
       "ONE MACHINE. Everything runs on one computer. That machine is a single point of failure, and you can only grow by buying a bigger one.",
       "NO LOAD BALANCING OF ITS OWN. Compose will happily run several copies of a service, and other containers that reach it by service name get simple DNS round-robin across them. What it has no concept of is a load balancer object you can put in front: no health-aware routing, and no way to publish one address for the group. Any service that publishes a fixed host port is capped at one copy, because two programs cannot both own port 3001. Getting past that means dropping the fixed port and running a proxy you configure and maintain yourself, which is precisely the work Kubernetes does for you.",
       "NO ROLLING UPDATES. Updating means stopping the old container and starting the new one. There's a gap in between, and during that gap requests fail.",
@@ -254,6 +264,10 @@ export const CHAPTER_4: Lesson[] = [
         saw: "Back to one. In Chapter 5 you'll scale a service to five copies with a single command and no port conflicts at all. Not because Kubernetes does it automatically, but because you declare a Service alongside the Deployment, and that Service is a real load balancer: one stable address, health-aware, updated every time a pod appears or disappears. This project's manifests declare one for each service, which is why scaling there is a number and nothing else.",
         check: { kind: "manual", label: "Back to one worker" },
       },
+    ],
+    recap: [
+      "You asked Compose to run three workers with a fixed published host port and saw the scale fail on port collision.",
+      "You put the stack back to a single worker so the fleet was healthy again, with a clear picture of what Compose will not solve for you.",
     ],
     takeaway:
       "Compose runs on one machine, has no load balancer to put in front of copies, and can't update without downtime. Those four gaps are the entire case for Kubernetes.",

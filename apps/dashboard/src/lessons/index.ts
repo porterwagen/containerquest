@@ -70,11 +70,12 @@ export const CHAPTERS: ChapterMeta[] = [
   },
   {
     number: 3,
-    title: "Networking, config, and data",
+    title: "Networking, Compose, and data",
     summary: [
       "You know why a running service can still be unreachable, and how to fix it.",
       "You know containers find each other by name, because names survive restarts and IPs do not.",
       "You can keep one image and change its behavior per environment, and make data outlive a container.",
+      "You can read a Compose file as a recipe, drive services by name (logs, exec, recreate), and write a small multi-service stack of your own.",
     ],
     nextUp: "Next: breaking things on purpose, and the health checks that decide what happens.",
   },

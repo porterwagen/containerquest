@@ -10,7 +10,7 @@ export default function LearnPage() {
   const mode = process.env.NEXT_PUBLIC_QUEST_MODE === "demo" ? "demo" : "live";
 
   return (
-    <main className="mx-auto max-w-[1180px] px-5 py-7 sm:px-8">
+    <main className="mx-auto max-w-[1240px] px-5 py-7 sm:px-8">
       <AppHeader current="learn" mode={mode} />
       <Course mode={mode} />
     </main>

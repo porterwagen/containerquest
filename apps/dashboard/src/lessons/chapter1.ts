@@ -54,6 +54,10 @@ export const CHAPTER_1: Lesson[] = [
         check: { kind: "requests", service: "compute", delta: 1 },
       },
     ],
+    recap: [
+      "You listed the running fleet and saw several services at once, not a single demo container.",
+      "You called the C compute service over HTTP and got a real /meta answer from a program written in a different language than the dashboard.",
+    ],
     takeaway:
       "Same image/container ideas as Getting Started, now applied to a multi-service fleet you will use for the rest of the course.",
   },
@@ -93,6 +97,10 @@ export const CHAPTER_1: Lesson[] = [
         saw: "A number like 148018 instead of 1. This is the same running program (one process, one place in memory) and it has two completely different identities depending on where you stand. Neither number is wrong: inside its restricted view it genuinely is #1, and outside that view it is just another process among hundreds. That gap is the entire trick. On a Mac, \"outside\" means the Linux VM from the concept above, so don't go looking for this pid in Activity Monitor: what you would find there is OrbStack or Docker Desktop, one process holding the whole VM. On Linux the number is a real host pid you could pass straight to `kill`.",
         check: { kind: "manual", label: "I saw a big number, not 1" },
       },
+    ],
+    recap: [
+      "You asked a service for its pid from inside its own view and saw pid 1, the number it believes is first on the machine.",
+      "You looked at that same process from the host and saw an ordinary large pid, proving the container is a process with a private view, not a second computer.",
     ],
     takeaway:
       "A container is a normal process that's been given a restricted view of the system, which is why it starts in milliseconds instead of half a minute.",
@@ -136,6 +144,10 @@ export const CHAPTER_1: Lesson[] = [
         saw: "A short random string you've never seen. That was a completely fresh container, born from the same template as the AI service that's been running this whole time. It lived for about half a second. The --rm flag deleted it the moment it finished, and the original service never noticed it existed.",
         check: { kind: "manual", label: "I saw a new random name" },
       },
+    ],
+    recap: [
+      "You listed the project images and treated them as templates on disk, separate from anything currently running.",
+      "You started a throwaway container from the Python image, read its identity, and removed it while the image stayed available to run again.",
     ],
     takeaway:
       "An image is the template sitting on disk; a container is one running copy of it. You can make as many containers as you like from a single image.",

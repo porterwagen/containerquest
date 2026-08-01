@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { LESSONS, chapters } from "@/lessons";
+import { BetaChip, BrandMark } from "@/components/BrandMark";
+import { TheMap } from "@/components/TheMap";
 
 /**
  * The front door.
@@ -65,10 +67,7 @@ export default function Landing() {
   return (
     <main className="mx-auto max-w-[1180px] px-5 py-7 sm:px-8">
       <nav className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <span className="pulse h-2 w-2 rounded-full bg-live text-live" />
-          <span className="text-[15px] font-medium tracking-tight text-ink">Container Quest</span>
-        </div>
+        <BrandMark size="sm" as="span" />
         <div className="flex items-center gap-1 text-[13px]">
           <Link
             href="/learn"
@@ -96,8 +95,9 @@ export default function Landing() {
       {/* Hero */}
       <section className="mt-16 grid items-center gap-12 lg:mt-24 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="fade-up">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-beam">
-            A course that runs on your own machine
+          <p className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-beam">
+            <span>A course that runs on your own machine</span>
+            <BetaChip className="normal-case tracking-[0.14em] px-1.5 py-0.5 text-[9px]" />
           </p>
 
           <h1 className="mt-4 text-[40px] font-medium leading-[1.08] tracking-tight text-ink sm:text-[52px]">
@@ -195,6 +195,24 @@ export default function Landing() {
               <p className="mt-2.5 text-[13px] leading-relaxed text-ink-dim">{p.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* The map — orientation before commitment. Someone who has never used
+          Docker should be able to see the shape of the whole subject here,
+          without reading a lesson. Same component the course itself uses. */}
+      <section className="mt-24 lg:mt-32">
+        <h2 className="text-[26px] font-medium tracking-tight text-ink">
+          How it all fits together
+        </h2>
+        <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-ink-dim">
+          Three tools, three scales, one idea repeated at each: package a program, run it, keep it
+          running. Nothing here needs to be understood yet — it is the map, so you can see where
+          every chapter lands before you start.
+        </p>
+
+        <div className="mt-8">
+          <TheMap />
         </div>
       </section>
 
@@ -342,8 +360,14 @@ export default function Landing() {
       </section>
 
       <footer className="mt-20 border-t border-edge py-8 text-[12.5px] text-ink-faint">
-        Container Quest. A miniature production platform in five languages, built to make Docker
-        and Kubernetes visible.
+        <span className="inline-flex flex-wrap items-center gap-2">
+          <span>Container Quest</span>
+          <BetaChip className="px-1.5 py-0.5 text-[9px]" />
+        </span>
+        <span className="mt-1.5 block">
+          A miniature production platform in five languages, built to make Docker and Kubernetes
+          visible. Lessons and the fleet are still moving.
+        </span>
       </footer>
     </main>
   );

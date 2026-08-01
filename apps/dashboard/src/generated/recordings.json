@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-07-31T21:37:22.766Z",
+  "recordedAt": "2026-08-01T16:15:24.942Z",
   "recordings": {
     "the-map:0": {
       "command": "docker --version",
@@ -768,6 +768,84 @@
       "output": "NAME      READY   UP-TO-DATE   AVAILABLE   AGE\nai        1/1     1            1           2d3h\ncompute   2/2     2            2           2d3h\nutil      2/2     2            2           2d3h",
       "exitCode": 0,
       "ms": 304
+    },
+    "compose-recipe:0": {
+      "command": "cd ~/Documents/containerquest && docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml config --services",
+      "output": "postgres\nredis\nsocket-proxy\nai\ncompute\nutil\nworker\ndashboard",
+      "exitCode": 0,
+      "ms": 353
+    },
+    "compose-recipe:1": {
+      "command": "cd ~/Documents/containerquest && docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml config --images",
+      "output": "postgres:18-alpine\nredis:8-alpine\nquest/compute:dev\nquest/worker:dev\nquest/util:dev\ntecnativa/docker-socket-proxy:0.3\nquest/ai:dev\nquest/dashboard:dev",
+      "exitCode": 0,
+      "ms": 274
+    },
+    "compose-recipe:2": {
+      "command": "cd ~/Documents/containerquest && grep -nE '^(name:|services:)|^[ ]{2}[a-z0-9_-]+:|^[ ]{4}(image|build|ports|environment|volumes|depends_on|healthcheck|restart|command):' infra/compose/docker-compose.yml | head -60",
+      "output": "8:name: container-quest\n16:services:\n34:  socket-proxy:\n35:    image: tecnativa/docker-socket-proxy:0.3\n36:    environment:\n60:    volumes:\n64:    restart: unless-stopped\n68:  postgres:\n69:    image: postgres:18-alpine\n70:    environment:\n74:    ports: [\"5432:5432\"]\n75:    volumes:\n83:    healthcheck:\n94:  redis:\n95:    image: redis:8-alpine\n96:    command: [\"redis-server\", \"--save\", \"\", \"--appendonly\", \"no\"]\n97:    ports: [\"6379:6379\"]\n98:    healthcheck:\n106:  compute:\n107:    build:\n111:    image: quest/compute:dev\n112:    environment:\n115:    ports: [\"9000:9000\"]\n116:    restart: unless-stopped\n122:  util:\n123:    build:\n126:    image: quest/util:dev\n127:    environment:\n135:    ports: [\"8080:8080\"]\n136:    restart: unless-stopped\n137:    depends_on: [compute, ai]\n139:  ai:\n140:    build:\n143:    image: quest/ai:dev\n144:    environment:\n147:    ports: [\"8000:8000\"]\n148:    restart: unless-stopped\n149:    healthcheck:\n159:  worker:\n160:    build:\n167:    image: quest/worker:dev\n168:    environment:\n179:    ports: [\"3001:3001\"]\n180:    restart: unless-stopped\n181:    healthcheck:\n190:    depends_on:\n194:  dashboard:\n195:    build:\n199:    image: quest/dashboard:dev\n200:    environment:\n214:    ports: [\"3000:3000\"]\n215:    restart: unless-stopped\n216:    healthcheck:\n228:    depends_on: [worker, ai, util, compute]\n231:  pgdata:\n\nSaving session...\n...copying shared history...\n...saving history...truncating history files...\n...completed.",
+      "exitCode": 0,
+      "ms": 238
+    },
+    "compose-recipe:3": {
+      "command": "cd ~/Documents/containerquest && docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml logs --tail 20 redis",
+      "output": "Restored session: Sat Aug  1 10:15:16 MDT 2026\nredis-1  | 1:M 01 Aug 2026 15:53:10.401 * <timeseries> Detected redis oss\nredis-1  | 1:M 01 Aug 2026 15:53:10.404 * <timeseries> Subscribe to ASM events\nredis-1  | 1:M 01 Aug 2026 15:53:10.404 * <timeseries> Enabled diskless replication\nredis-1  | 1:M 01 Aug 2026 15:53:10.404 * Module 'timeseries' loaded from /usr/local/lib/redis/modules//redistimeseries.so\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Created new data type 'ReJSON-RL'\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> version: 80800 git sha: unknown branch: unknown\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V1 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V2 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V3 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V4 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V5 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V6 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Exported RedisJSON_V7 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Enabled diskless replication\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <ReJSON> Initialized shared string cache, thread safe: true.\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * Module 'ReJSON' loaded from /usr/local/lib/redis/modules//rejson.so\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * <search> Acquired RedisJSON_V7 API\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * Server initialized\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 * Ready to accept connections tcp\nredis-1  | 1:M 01 Aug 2026 15:53:10.405 # WARNING: Redis does not require authentication and is not protected by network restrictions. Redis will accept connections from any IP address on any network interface.",
+      "exitCode": 0,
+      "ms": 286
+    },
+    "compose-recipe:4": {
+      "command": "cd ~/Documents/containerquest && docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml exec -T redis redis-cli ping",
+      "output": "PONG",
+      "exitCode": 0,
+      "ms": 304
+    },
+    "compose-recipe:5": {
+      "command": "cd ~/Documents/containerquest && sed -n '/^  worker:/,/^  [a-z]/p' infra/compose/docker-compose.yml | head -40",
+      "output": "  worker:\n    build:\n      # teach: Context is the REPO ROOT, because the npm lockfile lives there and\n      # teach: Docker cannot reach outside its context. Hence the longer COPY\n      # teach: paths inside services/worker/Dockerfile.\n      context: ../..\n      dockerfile: services/worker/Dockerfile\n      args: *build-args\n    image: quest/worker:dev\n    environment:\n      SERVICE_VERSION: \"1.0.0\"\n      GIT_SHA: ${GIT_SHA:-dev}\n      # teach: `redis` and `postgres` are DNS names, resolved by Docker's\n      # teach: embedded DNS server on the shared network. No IP addresses, no\n      # teach: config files, no service registry. Kubernetes works the same way.\n      REDIS_URL: redis://redis:6379\n      DATABASE_URL: postgres://quest:quest@postgres:5432/quest\n      AI_URL: http://ai:8000\n      # teach: 2 keeps Queue-200 demos visible longer on the Lab counters.\n      WORKER_CONCURRENCY: \"2\"\n    ports: [\"3001:3001\"]\n    restart: unless-stopped\n    healthcheck:\n      # teach: busybox wget, already in the alpine base — no extra package, no\n      # teach: extra layer. Adding curl just for a healthcheck is a common way\n      # teach: to grow an image for no reason.\n      test: [\"CMD\", \"wget\", \"-qO-\", \"--header=X-Quest-Probe: 1\", \"http://127.0.0.1:3001/healthz\"]\n      interval: 5s\n      timeout: 3s\n      retries: 6\n      start_period: 5s\n    depends_on:\n      redis: { condition: service_healthy }\n      postgres: { condition: service_healthy }\n\n  dashboard:\n\nSaving session...\n...saving history...truncating history files...\n...completed.",
+      "exitCode": 0,
+      "ms": 235
+    },
+    "compose-recipe:6": {
+      "command": "cd ~/Documents/containerquest && docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml up -d --force-recreate redis && sleep 2 && docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml ps redis",
+      "output": "Restored session: Sat Aug  1 10:15:17 MDT 2026\n Container container-quest-redis-1 Recreate \n Container container-quest-redis-1 Recreated \n Container container-quest-redis-1 Starting \n Container container-quest-redis-1 Started \nNAME                      IMAGE            COMMAND                  SERVICE   CREATED         STATUS                            PORTS\ncontainer-quest-redis-1   redis:8-alpine   \"docker-entrypoint.s…\"   redis     2 seconds ago   Up 2 seconds (health: starting)   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp",
+      "exitCode": 0,
+      "ms": 2738
+    },
+    "compose-write:0": {
+      "command": "mkdir -p ~/quest-compose\ncat > ~/quest-compose/docker-compose.yml <<'EOF'\nname: quest-compose\n\nservices:\n  web:\n    image: nginx:alpine\n    ports:\n      - \"8099:80\"\n\n  cache:\n    image: redis:8-alpine\nEOF\ncat ~/quest-compose/docker-compose.yml",
+      "output": "name: quest-compose\n\nservices:\n  web:\n    image: nginx:alpine\n    ports:\n      - \"8099:80\"\n\n  cache:\n    image: redis:8-alpine",
+      "exitCode": 0,
+      "ms": 225
+    },
+    "compose-write:1": {
+      "command": "cd ~/quest-compose && docker compose config --services",
+      "output": "cache\nweb",
+      "exitCode": 0,
+      "ms": 262
+    },
+    "compose-write:2": {
+      "command": "cd ~/quest-compose && docker compose up -d",
+      "output": " Network quest-compose_default Creating \n Network quest-compose_default Created \n Container quest-compose-cache-1 Creating \n Container quest-compose-web-1 Creating \n Container quest-compose-cache-1 Created \n Container quest-compose-web-1 Created \n Container quest-compose-cache-1 Starting \n Container quest-compose-web-1 Starting \n Container quest-compose-web-1 Started \n Container quest-compose-cache-1 Started",
+      "exitCode": 0,
+      "ms": 500
+    },
+    "compose-write:3": {
+      "command": "curl -s -o /dev/null -w 'web %{http_code}\\n' localhost:8099/ && cd ~/quest-compose && docker compose exec -T cache redis-cli ping",
+      "output": "web 200\nPONG",
+      "exitCode": 0,
+      "ms": 346
+    },
+    "compose-write:4": {
+      "command": "cd ~/quest-compose && docker compose ps && docker compose down && docker compose ps",
+      "output": "NAME                    IMAGE            COMMAND                  SERVICE   CREATED        STATUS                  PORTS\nquest-compose-cache-1   redis:8-alpine   \"docker-entrypoint.s…\"   cache     1 second ago   Up Less than a second   6379/tcp\nquest-compose-web-1     nginx:alpine     \"/docker-entrypoint.…\"   web       1 second ago   Up Less than a second   0.0.0.0:8099->80/tcp, [::]:8099->80/tcp\n Container quest-compose-cache-1 Stopping \n Container quest-compose-web-1 Stopping \n Container quest-compose-web-1 Stopped \n Container quest-compose-web-1 Removing \n Container quest-compose-web-1 Removed \n Container quest-compose-cache-1 Stopped \n Container quest-compose-cache-1 Removing \n Container quest-compose-cache-1 Removed \n Network quest-compose_default Removing \n Network quest-compose_default Removed \nNAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS",
+      "exitCode": 0,
+      "ms": 731
+    },
+    "compose-write:5": {
+      "command": "rm -rf ~/quest-compose && echo 'quest-compose removed'",
+      "output": "quest-compose removed\n\nSaving session...\n...saving history...truncating history files...\n...completed.",
+      "exitCode": 0,
+      "ms": 256
     }
   }
 }

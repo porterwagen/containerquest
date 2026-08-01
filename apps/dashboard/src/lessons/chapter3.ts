@@ -1,18 +1,26 @@
 import type { Lesson } from "./types.ts";
 
 /**
- * Chapter 3  -  How containers talk, and where data lives.
+ * Chapter 3  -  How containers talk, where data lives, and Compose.
  *
  * Networking and storage are where most real-world container confusion
  * happens, because both behave differently inside a container than the
- * intuition you built outside one.
+ * intuition you built outside one. Compose is the file that declares the
+ * whole multi-service picture: after ports, DNS, env, and volumes, this
+ * chapter makes that file legible and writable.
  */
+
+const CHAPTER_TITLE = "Networking, Compose, and data";
+
+/** Absolute-enough path used across the course for this repo on the learner machine. */
+const COMPOSE =
+  "docker compose -f ~/Documents/containerquest/infra/compose/docker-compose.yml";
 
 export const CHAPTER_3: Lesson[] = [
   {
     id: "ports",
     chapter: 3,
-    chapterTitle: "Networking, config, and data",
+    chapterTitle: CHAPTER_TITLE,
     title: "Ports: why your app is running but unreachable",
     minutes: 8,
     concept: [
@@ -59,6 +67,11 @@ export const CHAPTER_3: Lesson[] = [
         check: { kind: "manual", label: "I saw it refuse" },
       },
     ],
+    recap: [
+      "You listed published port mappings and read host-to-container arrows in `docker ps`.",
+      "You reached a service through a published port and got a healthy response.",
+      "You proved an unpublished port is unreachable from your machine even when containers are running.",
+    ],
     takeaway:
       "Publishing connects a port on your machine to one inside a container. Inside a container, `localhost` means only that container: listen on 0.0.0.0 instead.",
   },
@@ -66,7 +79,7 @@ export const CHAPTER_3: Lesson[] = [
   {
     id: "networks-dns",
     chapter: 3,
-    chapterTitle: "Networking, config, and data",
+    chapterTitle: CHAPTER_TITLE,
     title: "How containers find each other",
     minutes: 8,
     concept: [
@@ -111,6 +124,11 @@ export const CHAPTER_3: Lesson[] = [
         check: { kind: "manual", label: "I saw the network" },
       },
     ],
+    recap: [
+      "From inside the worker you resolved another service by DNS name and saw a real IP attached to that name.",
+      "You called a neighbor over HTTP using only its Compose service name, with no hardcoded address.",
+      "You listed the project network that makes those names work for every service in the file.",
+    ],
     takeaway:
       "Containers on a shared network reach each other by name, not IP, because names survive restarts and IP addresses don't.",
   },
@@ -118,7 +136,7 @@ export const CHAPTER_3: Lesson[] = [
   {
     id: "config-env",
     chapter: 3,
-    chapterTitle: "Networking, config, and data",
+    chapterTitle: CHAPTER_TITLE,
     title: "Configuration: same image, different settings",
     minutes: 6,
     concept: [
@@ -156,6 +174,10 @@ export const CHAPTER_3: Lesson[] = [
         check: { kind: "manual", label: "I saw 9.9.9" },
       },
     ],
+    recap: [
+      "You inspected the worker's environment and saw addresses and version supplied at start, not baked into the image.",
+      "You ran the same Python image with a different SERVICE_VERSION and watched it report 9.9.9 without rebuilding.",
+    ],
     takeaway:
       "Build one image, configure it at startup. Same bytes in every environment, behavior supplied from outside.",
   },
@@ -163,7 +185,7 @@ export const CHAPTER_3: Lesson[] = [
   {
     id: "volumes",
     chapter: 3,
-    chapterTitle: "Networking, config, and data",
+    chapterTitle: CHAPTER_TITLE,
     title: "Volumes: making data outlive the container",
     minutes: 8,
     concept: [
@@ -209,7 +231,241 @@ export const CHAPTER_3: Lesson[] = [
         check: { kind: "manual", label: "I saw the volume" },
       },
     ],
+    recap: [
+      "You wrote a proof row into Postgres while it was running on a named volume.",
+      "You force-recreated the database container and found the row still there, unlike files stored only inside a container.",
+      "You listed the volume as its own object, independent of any single container's lifetime.",
+    ],
     takeaway:
       "Volumes hold data outside a container's lifetime. Anything you'd be upset to lose needs one.",
+  },
+
+  {
+    id: "compose-recipe",
+    chapter: 3,
+    chapterTitle: CHAPTER_TITLE,
+    section: "Compose",
+    title: "Compose is the recipe for the whole stack",
+    minutes: 12,
+    concept: [
+      "You have been living inside a multi-container system since the fleet came up. The file that defines it is Docker Compose: one YAML document that says which services exist, what image (or Dockerfile) each one uses, which ports they publish, what environment they get, what volumes they mount, and which other services they wait on.",
+      "Up to now the course mostly used that file as plumbing: `make up` builds and starts everything. This lesson is about reading the recipe itself, and using the Compose CLI the way you will at work: by service name, not by long container ids.",
+      "Compose does not replace Docker. It is a layer on top: each service still becomes one or more containers. The win is that the relationship between them is declared once, instead of a pile of `docker run` flags you will never reproduce the same way twice.",
+      "Five keys cover most of what you will ever write: `image` or `build` (where the program comes from), `ports` (what the host can reach), `environment` (settings at startup), `volumes` (data that must outlive the container), and `depends_on` (startup order, with health, not just \"started\"). You already met the first four as ideas. Now you see them in the file that wires this project.",
+    ],
+    steps: [
+      {
+        instruction:
+          "List every service this project's compose file defines. These are the roles on the shared network: the names other containers use as hostnames.",
+        command: `cd ~/Documents/containerquest && ${COMPOSE} config --services`,
+        commandParts: [
+          { piece: "docker compose -f ...", meaning: "Target this project's compose file" },
+          { piece: "config --services", meaning: "Print the service names after Compose resolves the file" },
+        ],
+        saw: "Eight names (dashboard, worker, ai, util, compute, postgres, redis, socket-proxy). Those names are DNS on the project network: `redis://redis:6379` works because `redis` is a service name, not a lucky hostname.",
+        check: { kind: "manual", label: "I saw the eight service names" },
+      },
+      {
+        instruction:
+          "See which image each service will run. Build-from-source services show the tag Compose will produce; pull-only services show the registry image.",
+        command: `cd ~/Documents/containerquest && ${COMPOSE} config --images`,
+        commandParts: [
+          { piece: "config --images", meaning: "Resolved image references for every service" },
+        ],
+        saw: "A mix of `quest/...:dev` (built by this repo) and official images like `postgres:18-alpine` and `redis:8-alpine`. Same idea either way: Compose ends up with a concrete image to run.",
+        check: { kind: "manual", label: "I saw the image list" },
+      },
+      {
+        instruction:
+          "Skim the keys that matter in the real file: service names, image/build, ports, environment, volumes, depends_on, healthcheck.",
+        command:
+          "cd ~/Documents/containerquest && grep -nE '^(name:|services:)|^[ ]{2}[a-z0-9_-]+:|^[ ]{4}(image|build|ports|environment|volumes|depends_on|healthcheck|restart|command):' infra/compose/docker-compose.yml | head -60",
+        commandParts: [
+          { piece: "grep -nE '...'", meaning: "Show structure lines with numbers, not the whole file" },
+          { piece: "head -60", meaning: "Enough to see the pattern without drowning" },
+        ],
+        saw: "Indentation is the structure: two spaces for a service name under `services:`, four spaces for its fields. When you open the full file later, you are reading the same shape you just listed.",
+        check: { kind: "manual", label: "I recognized the keys" },
+      },
+      {
+        instruction:
+          "Pull logs for one service by its Compose name, not the long container name from `docker ps`.",
+        command: `cd ~/Documents/containerquest && ${COMPOSE} logs --tail 20 redis`,
+        commandParts: [
+          { piece: "logs --tail 20", meaning: "Last twenty lines only" },
+          { piece: "redis", meaning: "Service name from the compose file" },
+        ],
+        saw: "Redis startup lines, labeled with the service. In a multi-service project you almost always want logs for ONE role (`worker`, `ai`), not every container at once.",
+        check: { kind: "manual", label: "I saw redis logs" },
+      },
+      {
+        instruction:
+          "Run a command inside a service by name. This is the Compose form of `docker exec`.",
+        command: `cd ~/Documents/containerquest && ${COMPOSE} exec -T redis redis-cli ping`,
+        commandParts: [
+          { piece: "exec -T", meaning: "Run in the service container; -T = no interactive TTY (scripts/CI friendly)" },
+          { piece: "redis", meaning: "Service name" },
+          { piece: "redis-cli ping", meaning: "Ask Redis if it is alive; expects PONG" },
+        ],
+        saw: "PONG. Same power as `docker exec container-quest-redis-1 ...`, but you only need the role name Compose knows.",
+        check: { kind: "manual", label: "I saw PONG" },
+      },
+      {
+        instruction:
+          "Show how the worker waits for its dependencies. Compose can wait until healthchecks pass, not merely until the process exists.",
+        command:
+          "cd ~/Documents/containerquest && sed -n '/^  worker:/,/^  [a-z]/p' infra/compose/docker-compose.yml | head -40",
+        commandParts: [
+          { piece: "sed -n '/^  worker:/,...'", meaning: "Print the worker service block from the YAML" },
+        ],
+        saw: "Look for `depends_on` with `condition: service_healthy` on redis and postgres. That is Compose saying: do not start the worker until those healthchecks succeed. Plain `depends_on: [redis]` only waits for the container to start, which is not the same as \"ready for traffic.\"",
+        check: { kind: "manual", label: "I saw depends_on + health" },
+      },
+      {
+        instruction:
+          "Recreate a single service from the recipe. The rest of the stack stays up.",
+        command: `cd ~/Documents/containerquest && ${COMPOSE} up -d --force-recreate redis && sleep 2 && ${COMPOSE} ps redis`,
+        commandParts: [
+          { piece: "up -d --force-recreate redis", meaning: "Rebuild/recreate only the redis service, detached" },
+          { piece: "ps redis", meaning: "Confirm that one service's status" },
+        ],
+        ifItFails:
+          "If redis flaps unhealthy for a few seconds, wait and run `docker compose ... ps redis` again. A recreate always has a short gap.",
+        saw: "Redis comes back as one row, healthy. You did not tear down the whole fleet. Compose targets one service when you name it. That is the day-to-day workflow: change one thing, recreate one service.",
+        check: { kind: "manual", label: "Redis is back up" },
+      },
+    ],
+    recap: [
+      "You listed the services and images defined by this project's compose file.",
+      "You used Compose to fetch logs and exec by service name, and you saw depends_on wait on healthy dependencies.",
+      "You recreated a single service without taking the whole stack down.",
+    ],
+    takeaway:
+      "Compose is a declarative recipe for several containers: service names become DNS, and the CLI talks in those names. Read the file; do not memorize docker run flags.",
+    source: {
+      path: "infra/compose/docker-compose.yml",
+      note: "The full fleet recipe: build args, healthchecks, depends_on, and the socket-proxy least-privilege pattern all live here.",
+    },
+  },
+
+  {
+    id: "compose-write",
+    chapter: 3,
+    chapterTitle: CHAPTER_TITLE,
+    section: "Compose",
+    title: "Write a tiny Compose file yourself",
+    minutes: 12,
+    concept: [
+      "Reading a large compose file is useful. Writing a small one is what makes the skill stick.",
+      "You will define two services: a static web server (nginx) and a Redis. They share a default project network automatically, so later you could reach Redis from the web container by the hostname `cache` if you needed to. That is the same DNS idea as `redis` in this project's fleet.",
+      "No Makefile, no monorepo build. Just a folder, a YAML file, `up`, prove it works, then `down`. That loop is how most local multi-service development starts.",
+      "Port 8099 is deliberate: it avoids colliding with the fleet's published ports (3000, 8000, 5432, …). When something fails with \"port is already allocated,\" change the left-hand number in `ports`.",
+    ],
+    steps: [
+      {
+        instruction:
+          "Create a folder and a minimal compose file. Look at the layout below first, then run the command (or type the same file in an editor).",
+        scaffold: {
+          root: "~/quest-compose",
+          note: "One file. Two services. No application code of your own.",
+          files: [
+            {
+              path: "docker-compose.yml",
+              language: "yaml",
+              content: `name: quest-compose
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8099:80"
+
+  cache:
+    image: redis:8-alpine
+`,
+            },
+          ],
+        },
+        command: `mkdir -p ~/quest-compose
+cat > ~/quest-compose/docker-compose.yml <<'EOF'
+name: quest-compose
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8099:80"
+
+  cache:
+    image: redis:8-alpine
+EOF
+cat ~/quest-compose/docker-compose.yml`,
+        commandParts: [
+          { piece: "name: quest-compose", meaning: "Project name (shows up in container names and networks)" },
+          { piece: "services:", meaning: "Each key under here is a role / DNS name" },
+          { piece: "image: nginx:alpine", meaning: "Pull and run this image (no build: block needed)" },
+          { piece: "ports: [\"8099:80\"]", meaning: "Host 8099 → container 80 (nginx's default)" },
+        ],
+        saw: "A complete Compose project in under fifteen lines. Two images from Docker Hub, one published port, default network for free.",
+        check: { kind: "manual", label: "I read the compose file" },
+      },
+      {
+        instruction: "Validate the file and list the services Compose thinks it will run.",
+        command: "cd ~/quest-compose && docker compose config --services",
+        commandParts: [
+          { piece: "cd ~/quest-compose", meaning: "Compose finds docker-compose.yml in the current directory" },
+          { piece: "config --services", meaning: "Parse/validate and print service names" },
+        ],
+        ifItFails:
+          "If Compose complains about YAML indentation, open the file and check that `web` and `cache` line up under `services:`, and that `image` / `ports` are indented one level further.",
+        saw: "web and cache. If this prints those two names, the file is valid enough to start.",
+        check: { kind: "manual", label: "I saw web and cache" },
+      },
+      {
+        instruction: "Start both services in the background.",
+        command: "cd ~/quest-compose && docker compose up -d",
+        commandParts: [
+          { piece: "up -d", meaning: "Create network/containers and start them detached" },
+        ],
+        ifItFails:
+          "Port 8099 already in use: change the left side of ports to another free number (e.g. 8199:80), save, and run up -d again. Images missing: Compose will pull them; wait for the pull to finish.",
+        saw: "Compose creates a project network and two containers. First run may pull nginx and redis; that is normal.",
+        check: { kind: "running", container: "quest-compose-web-1" },
+      },
+      {
+        instruction: "Hit the web service through the published port, then ping Redis by service name from the Compose CLI.",
+        command:
+          "curl -s -o /dev/null -w 'web %{http_code}\\n' localhost:8099/ && cd ~/quest-compose && docker compose exec -T cache redis-cli ping",
+        commandParts: [
+          { piece: "curl ... localhost:8099", meaning: "Host port you published for web" },
+          { piece: "compose exec -T cache redis-cli ping", meaning: "Inside the cache service by Compose name" },
+        ],
+        saw: "web 200 and PONG. Two containers, one file, no hand-written docker run.",
+        check: { kind: "manual", label: "I saw 200 and PONG" },
+      },
+      {
+        instruction: "See Compose's view of the project, then tear it down cleanly (containers and the project network, not your fleet).",
+        command:
+          "cd ~/quest-compose && docker compose ps && docker compose down && docker compose ps",
+        commandParts: [
+          { piece: "ps", meaning: "Status of this project only" },
+          { piece: "down", meaning: "Stop and remove this project's containers and default network" },
+        ],
+        saw: "First ps shows web and cache up; after down, empty (or no services). The Container Quest fleet on port 3000 is untouched: different project name, different compose file.",
+        check: { kind: "manual", label: "Project is down" },
+      },
+      {
+        instruction: "Optional tidy: remove the practice folder. Skip if you want to keep the file as a template.",
+        command: "rm -rf ~/quest-compose && echo 'quest-compose removed'",
+        check: { kind: "manual", label: "Cleaned up (or kept on purpose)" },
+      },
+    ],
+    recap: [
+      "You wrote a two-service compose file from scratch and validated it.",
+      "You brought the stack up, reached nginx on a published port, and talked to Redis by service name.",
+      "You tore the project down without disturbing the main Container Quest fleet.",
+    ],
+    takeaway:
+      "A compose file is just services, images, ports, and a shared network. Write a small one, up -d, prove it, down. That is the whole local multi-service loop.",
   },
 ];
