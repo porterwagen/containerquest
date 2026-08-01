@@ -471,6 +471,34 @@ function Sidebar({
   );
 }
 
+/**
+ * Link shown after lesson complete only when the lesson has real dashboard
+ * evidence: a named experiment/request-path experience, or a step that sets
+ * `dashboard`. Otherwise omit the button (no generic /dashboard fallback).
+ */
+function dashboardLinkForLesson(
+  lesson: Lesson,
+  relatedExperience?: ExperienceLink,
+): { href: string; label: string } | null {
+  if (relatedExperience) {
+    return {
+      href: relatedExperience.dashboardHref,
+      label: `Practice in ${relatedExperience.title} →`,
+    };
+  }
+
+  const cue = [...lesson.steps].reverse().find((step) => step.dashboard)?.dashboard;
+  if (!cue) return null;
+
+  const params = new URLSearchParams({ view: cue.view });
+  if (cue.experiment) params.set("experiment", cue.experiment);
+  if (cue.focus) params.set("focus", cue.focus);
+  return {
+    href: `/dashboard?${params.toString()}`,
+    label: `${cue.label} →`,
+  };
+}
+
 function LessonView({
   lesson,
   done,
@@ -492,6 +520,10 @@ function LessonView({
   const [manual, setManual] = useState<boolean[]>(() => lesson.steps.map(() => false));
   const baselineRef = useRef<ProbeMap | null>(null);
   const [probes, setProbes] = useState<ProbeMap>({});
+  const dashboardAfterLink = useMemo(
+    () => dashboardLinkForLesson(lesson, relatedExperience),
+    [lesson, relatedExperience],
+  );
 
   // Snapshot the counters when the lesson opens; every check is measured
   // against that moment, so previous lessons' activity can't pass a step.
@@ -630,14 +662,17 @@ function LessonView({
             </p>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Link
-              href={relatedExperience?.dashboardHref ?? "/dashboard"}
-              className="inline-block rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
-            >
-              {relatedExperience
-                ? `Practice in ${relatedExperience.title} →`
-                : "See it on the live dashboard →"}
-            </Link>
+            {/* Only when this lesson actually points at dashboard evidence.
+                Early Chapter 0 (Python one-shots, nginx on 8089, etc.) never
+                changes the fleet UI, so a generic "see it live" link is a lie. */}
+            {dashboardAfterLink && (
+              <Link
+                href={dashboardAfterLink.href}
+                className="inline-block rounded-md border border-edge px-3 py-1.5 text-[12.5px] text-ink-dim transition-colors hover:border-edge-bright hover:text-ink"
+              >
+                {dashboardAfterLink.label}
+              </Link>
+            )}
             <button
               type="button"
               onClick={onClearLesson}
