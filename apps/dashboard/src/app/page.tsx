@@ -66,29 +66,33 @@ export default function Landing() {
 
   return (
     <main className="mx-auto max-w-[1180px] px-5 py-7 sm:px-8">
-      <nav className="flex items-center justify-between gap-4">
-        <BrandMark size="sm" as="span" />
-        <div className="flex items-center gap-1 text-[13px]">
+      <nav>
+        <div className="flex items-center justify-between gap-3">
+          <BrandMark size="sm" as="span" />
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-[12px] text-ink-faint transition-colors hover:text-ink-dim"
+          >
+            GitHub
+          </a>
+        </div>
+        {/* Same segmented control as /learn and /dashboard — below the wordmark
+            so three nav items never fight for one mobile row. */}
+        <div className="mt-3 flex items-center gap-1 rounded-lg border border-edge bg-panel p-1">
           <Link
             href="/learn"
-            className="rounded-md px-3 py-1.5 text-ink-faint transition-colors hover:text-ink"
+            className="flex-1 rounded-md px-3 py-1.5 text-center text-[13px] text-ink-faint transition-colors hover:text-ink-dim sm:flex-none"
           >
             Learn
           </Link>
           <Link
             href="/dashboard"
-            className="rounded-md px-3 py-1.5 text-ink-faint transition-colors hover:text-ink"
+            className="flex-1 rounded-md px-3 py-1.5 text-center text-[13px] text-ink-faint transition-colors hover:text-ink-dim sm:flex-none"
           >
             Dashboard
           </Link>
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-md px-3 py-1.5 text-ink-faint transition-colors hover:text-ink"
-          >
-            GitHub
-          </a>
         </div>
       </nav>
 
