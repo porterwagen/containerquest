@@ -175,7 +175,11 @@ export const CHAPTER_0: Lesson[] = [
         command:
           'docker rm -f quest-py-once >/dev/null 2>&1; docker run --name quest-py-once python:3.13-alpine python -c "print(\'finished, but the container record remains\')"',
         commandParts: [
-          { piece: "docker rm -f quest-py-once", meaning: "Clean up any old container with this name" },
+          {
+            piece: "docker rm -f quest-py-once",
+            meaning:
+              "Remove any leftover container with this name (-f = force: stop it if still running, then delete). Safe no-op if none exists",
+          },
           { piece: "docker run --name quest-py-once", meaning: "Start a container with a name you chose (no --rm)" },
           { piece: "python:3.13-alpine python -c \"...\"", meaning: "Same image, a one-shot command inside" },
         ],
@@ -268,7 +272,8 @@ export const CHAPTER_0: Lesson[] = [
     minutes: 8,
     concept: [
       "So far every container exited as soon as its command finished. Real services stay up: a web server, an API, a worker. Same image idea, different lifespan.",
-      "You will start a tiny public web server image (nginx) in the background, open it from your Mac, read its logs, then stop and remove it. Port 8089 is used on purpose so you do not fight with other local apps on 80 or 8080.",
+      "That is also why you did not need -d earlier. `docker run` waits for the main process inside the container. The Python one-liners printed and exited, so your terminal came back on its own. A web server never exits on purpose: without -d, that wait never ends and your prompt is stuck until you press Ctrl+C (which stops the server). -d means detached: start it in the background, print the container id, give your terminal back while the process keeps running.",
+      "You will start a tiny public web server image (nginx) that way, open it from your Mac, read its logs, then stop and remove it. Port 8089 is used on purpose so you do not fight with other local apps on 80 or 8080.",
       "This is still someone else's image. After this, you will package a program of your own with a Dockerfile. Same loop: image on disk, container instance, ports, logs, stop.",
     ],
     steps: [
@@ -278,21 +283,38 @@ export const CHAPTER_0: Lesson[] = [
         command:
           "docker rm -f quest-web >/dev/null 2>&1; docker run -d --name quest-web -p 8089:80 nginx:alpine",
         commandParts: [
-          { piece: "docker run -d", meaning: "Start in the background (detached); your terminal stays free" },
+          {
+            piece: "docker rm -f quest-web",
+            meaning:
+              "Remove any leftover container with this name first (-f = force: stop it if still running, then delete). Names must be unique, so re-running the lesson would fail without this",
+          },
+          {
+            piece: ">/dev/null 2>&1",
+            meaning: "Hide output if there was nothing to remove (so re-runs stay quiet)",
+          },
+          {
+            piece: "docker run -d",
+            meaning:
+              "Detached: run in the background and return your prompt. Needed because nginx keeps running; the earlier Python commands did not need -d because they exited on their own",
+          },
           { piece: "--name quest-web", meaning: "Stable name for later commands" },
           { piece: "-p 8089:80", meaning: "Your Mac port 8089 maps to port 80 inside the container" },
           { piece: "nginx:alpine", meaning: "Official small nginx image" },
         ],
         predict: {
-          question: "You are about to start a web server with -d. What does your terminal do?",
-          options: ["Hangs, showing server logs", "Prints an id and returns immediately"],
+          question:
+            "Earlier Python containers returned your prompt without -d. Why does this nginx command need -d?",
+          options: [
+            "nginx images require -d; Python images do not",
+            "nginx keeps running; without -d your terminal would wait on it forever",
+          ],
           answer: 1,
           because:
-            "-d means detached. Docker starts the process in the background and hands you back your prompt with the new container's id. Without -d the server would hold your terminal until you pressed Ctrl+C, which is why every long-running service you start uses it.",
+            "docker run always waits for the main process unless you pass -d. The Python one-liners finished in a second, so the wait ended by itself and it looked the same either way. nginx is a server that stays up on purpose, so without -d your shell would sit there attached to it until Ctrl+C (which would stop the container). -d starts it in the background, prints the container id, and gives you your prompt back while the server keeps running.",
         },
         ifItFails:
           "\"port is already allocated\" means something else on your Mac is already using 8089. Find it with `lsof -nP -iTCP:8089 -sTCP:LISTEN`, or just pick another number: `-p 8091:80` works exactly as well, and only the left-hand number has to be free.",
-        saw: "Docker prints a long container id. The process keeps running. You did not get an interactive shell; that is correct for -d.",
+        saw: "Docker prints a long container id. The process keeps running. You did not get an interactive shell; that is correct for -d. That is different from the Python runs: those printed and exited, so there was nothing left to detach from.",
         check: { kind: "running", container: "quest-web" },
       },
       {
@@ -307,14 +329,17 @@ export const CHAPTER_0: Lesson[] = [
         check: { kind: "manual", label: "I see quest-web Up" },
       },
       {
-        instruction: "Request the default nginx page through the published port.",
+        instruction:
+          "Request the default nginx page through the published port. After curl succeeds, open http://localhost:8089 in a private/incognito window and look at the nginx welcome page yourself.",
         command: "curl -s -o /dev/null -w 'HTTP %{http_code}\\n' http://localhost:8089/",
         commandParts: [
           { piece: "curl ... localhost:8089", meaning: "Hit your Mac's port; Docker forwards into the container" },
           { piece: "-w 'HTTP %{http_code}'", meaning: "Print the status code (expect 200)" },
         ],
-        saw: "HTTP 200. Traffic path: browser/curl on the host -> published port -> process inside the container.",
-        check: { kind: "manual", label: "I got HTTP 200" },
+        ifItFails:
+          "If curl is 200 but a normal browser tab errors, try a private/incognito window (localhost cookies from other apps sometimes break the regular tab).",
+        saw: "HTTP 200. Traffic path: browser/curl on the host -> published port -> process inside the container. Private window is a reliable way to see the same page in a browser.",
+        check: { kind: "manual", label: "I got HTTP 200 (and optionally saw it in a private window)" },
       },
       {
         instruction: "Read recent logs from the web server process.",
@@ -328,26 +353,40 @@ export const CHAPTER_0: Lesson[] = [
         check: { kind: "manual", label: "I saw log lines" },
       },
       {
-        instruction: "Stop the container, then remove it. Confirm it is gone.",
+        instruction:
+          "Stop the container, then remove it. Confirm it is gone. Expect two lines that just say quest-web first: that is normal.",
         command:
           "docker stop quest-web && docker rm quest-web && docker ps -a --filter name=quest-web --format '{{.Names}}' | grep . && echo 'still listed' || echo 'quest-web is gone'",
         commandParts: [
-          { piece: "docker stop quest-web", meaning: "Ask the process to shut down cleanly" },
-          { piece: "docker rm quest-web", meaning: "Delete the stopped container instance" },
-          { piece: "docker ps -a ... || echo gone", meaning: "Confirm the name no longer appears" },
+          {
+            piece: "docker stop quest-web",
+            meaning:
+              "Ask the process to shut down cleanly. On success it prints the container name (one quest-web line)",
+          },
+          {
+            piece: "docker rm quest-web",
+            meaning:
+              "Delete the stopped container instance. Also prints the name on success (second quest-web line)",
+          },
+          {
+            piece: "docker ps -a ... || echo gone",
+            meaning:
+              "List anything still named quest-web; if empty, print quest-web is gone. Those earlier name lines were stop/rm confirming, not leftovers",
+          },
         ],
-        saw: "quest-web is gone. The nginx:alpine image may still be on your machine (docker images nginx:alpine). Next you will build an image for a tiny Node program you control.",
+        saw: "You probably saw:\n\nquest-web\nquest-web\nquest-web is gone\n\nThe first two lines are stop and rm reporting success by echoing the name they acted on. Only the last line is the check. If the container were still there, you would see still listed instead. The nginx:alpine image may still be on your machine (docker images nginx:alpine). Next you will build an image for a tiny Node program you control.",
         check: { kind: "manual", label: "quest-web is gone" },
       },
     ],
     recap: [
+      "You learned why -d showed up now: docker run waits for the main process, and a web server does not exit the way a one-line Python print does.",
       "You started a long-running service in the background with -d and got your terminal back.",
       "You published a port with -p and reached a program inside a container from your own browser or curl.",
       "You read that container's logs, which is the first thing to do when anything misbehaves.",
-      "You stopped and removed it, and confirmed the name was free again.",
+      "You stopped and removed it, and learned that stop and rm print the container name on success, so two quest-web lines before is gone is expected, not a leftover.",
     ],
     takeaway:
-      "A service-shaped container runs in the background (-d), publishes ports (-p), and is inspected with ps, curl, and logs. Stop and rm end the instance; the image can remain.",
+      "docker run waits for the main process. Short commands finish and return your prompt without -d; long-running services need -d (or they hold the terminal). Service-shaped containers also publish ports (-p) and are inspected with ps, curl, and logs. Stop and rm end the instance (and print its name when they succeed); the image can remain.",
   },
 
   {
@@ -370,6 +409,10 @@ export const CHAPTER_0: Lesson[] = [
         command:
           "docker rm -f quest-closed >/dev/null 2>&1; docker run -d --name quest-closed nginx:alpine",
         commandParts: [
+          {
+            piece: "docker rm -f quest-closed",
+            meaning: "Clear any leftover with this name first (same cleanup prefix as last lesson)",
+          },
           { piece: "docker run -d --name quest-closed", meaning: "Background container, named so we can poke at it" },
           { piece: "(no -p flag)", meaning: "Deliberately omitted: nothing is connected to your Mac" },
           { piece: "nginx:alpine", meaning: "Same image as last lesson, already on disk" },
