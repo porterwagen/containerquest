@@ -360,7 +360,7 @@ function Sidebar({
           return (
             <div key={ch.number} className="mb-4">
               <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                <span className="text-[11px] font-medium text-ink-dim">
+                <span className="text-sm font-bold leading-tight text-ink-dim">
                   {ch.number}. {ch.title}
                 </span>
                 <span
