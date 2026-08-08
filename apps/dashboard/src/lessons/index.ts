@@ -6,6 +6,7 @@ import { CHAPTER_3 } from "./chapter3.ts";
 import { CHAPTER_4 } from "./chapter4.ts";
 import { CHAPTER_5 } from "./chapter5.ts";
 import { CHAPTER_6 } from "./chapter6.ts";
+import { CHAPTER_7 } from "./chapter7.ts";
 
 export * from "./types.ts";
 
@@ -17,6 +18,7 @@ export const LESSONS: Lesson[] = [
   ...CHAPTER_4,
   ...CHAPTER_5,
   ...CHAPTER_6,
+  ...CHAPTER_7,
 ];
 
 /**
@@ -107,7 +109,19 @@ export const CHAPTERS: ChapterMeta[] = [
       "You know how the image gets there, what a Deployment and a Service each do, and why port-forward is not how real traffic arrives.",
       "You know when NOT to reach for Kubernetes, which is as useful as knowing how to use it.",
     ],
-    nextUp: "From here: ConfigMaps and Secrets, Ingress, resource limits, and CI/CD.",
+    nextUp:
+      "Optional Chapter 7: ship Compose to a real VM with registry tags. Or go deeper on Kubernetes: ConfigMaps, Ingress, limits, CI/CD.",
+  },
+  {
+    number: 7,
+    title: "Ship beyond your laptop",
+    summary: [
+      "You know the core course ends at Chapter 6; Chapter 7 is an optional deploy roadmap.",
+      "You can name the path: small Compose stack on a VM, host .env, tunnel access, push images to a registry, pull tags on the server, roll back by retag.",
+      "You can choose whether to take that path next or go deeper on Kubernetes first.",
+    ],
+    nextUp:
+      "When built: hands-on lessons 7.1 to 7.9 (or a companion lab). Until then, use the roadmap list and a small multi-service app of your own.",
   },
 ];
 
