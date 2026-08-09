@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>quest-ship</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        background: #0b0d12;
+        color: #f3f1ec;
+      }
+      input,
+      button {
+        font: inherit;
+        padding: 0.5rem 0.75rem;
+      }
+      pre {
+        background: #12151c;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow: auto;
+      }
+      .muted {
+        color: #a8a29a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>quest-ship</h1>
+    <p class="muted">
+      Chapter 7 lab: browser → nginx → api → worker. Version:
+      <span id="ver">…</span>
+    </p>
+    <form id="f">
+      <input id="m" value="hello from quest-ship" size="40" />
+      <button type="submit">Run job</button>
+    </form>
+    <pre id="out">Submit a job.</pre>
+    <script>
+      fetch("/version.json")
+        .then((r) => r.json())
+        .then((v) => {
+          document.getElementById("ver").textContent = v.version || "?";
+        })
+        .catch(() => {});
+      document.getElementById("f").onsubmit = async (e) => {
+        e.preventDefault();
+        const message = document.getElementById("m").value;
+        const res = await fetch("/api/v1/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message }),
+        });
+        const data = await res.json();
+        document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+      };
+    </script>
+  </body>
+</html>

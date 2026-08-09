@@ -116,12 +116,12 @@ export const CHAPTERS: ChapterMeta[] = [
     number: 7,
     title: "Ship beyond your laptop",
     summary: [
-      "You know the core course ends at Chapter 6; Chapter 7 is an optional deploy roadmap.",
-      "You can name the path: small Compose stack on a VM, host .env, tunnel access, push images to a registry, pull tags on the server, roll back by retag.",
-      "You can choose whether to take that path next or go deeper on Kubernetes first.",
+      "You ran a small multi-service stack (quest-ship) and treated one host as a real production shape.",
+      "You practiced host env files, tunnel-style access, versioned images, registry push/pull shape, and rollback by retag.",
+      "You can explain when to build on a laptop or CI versus on the VM, and what to learn after you can ship (HTTPS, CI, cloud K8s).",
     ],
     nextUp:
-      "When built: hands-on lessons 7.1 to 7.9 (or a companion lab). Until then, use the roadmap list and a small multi-service app of your own.",
+      "Practice on a real cloud VM with GHCR. Then HTTPS, secrets, CI on git tags, and deeper Kubernetes only if you need them.",
   },
 ];
 

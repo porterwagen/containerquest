@@ -1,0 +1,65 @@
+# Pull-only deploy (no build). Set GHCR_IMAGE_PREFIX and APP_VERSION.
+name: quest-ship
+
+services:
+  worker:
+    image: ${GHCR_IMAGE_PREFIX}/quest-ship-worker:${APP_VERSION:-dev}
+    environment:
+      APP_VERSION: ${APP_VERSION:-dev}
+      WORK_DELAY_MS: ${WORK_DELAY_MS:-300}
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  api:
+    image: ${GHCR_IMAGE_PREFIX}/quest-ship-api:${APP_VERSION:-dev}
+    environment:
+      APP_VERSION: ${APP_VERSION:-dev}
+      WORKER_URL: http://worker:8001
+    depends_on:
+      worker:
+        condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  web:
+    image: ${GHCR_IMAGE_PREFIX}/quest-ship-web:${APP_VERSION:-dev}
+    ports: ["3100:80"]
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  internal:
+    driver: bridge

@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-08-01T16:15:24.942Z",
+  "recordedAt": "2026-08-08T22:52:56.331Z",
   "recordings": {
     "the-map:0": {
       "command": "docker --version",
@@ -846,6 +846,114 @@
       "output": "quest-compose removed\n\nSaving session...\n...saving history...truncating history files...\n...completed.",
       "exitCode": 0,
       "ms": 256
+    },
+    "two-machines:0": {
+      "command": "docker --version && docker compose version",
+      "output": "Docker version 29.4.0, build 9d7ad9f\nDocker Compose version v2.38.2-desktop.1\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "two-machines:1": {
+      "command": "echo 'laptop/build-machine  -->  registry (later)  -->  VM runs containers'",
+      "output": "laptop/build-machine  -->  registry (later)  -->  VM runs containers\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "ship-stack:0": {
+      "command": "rm -rf ~/quest-ship && cp -R labs/quest-ship ~/quest-ship && ls -1 ~/quest-ship",
+      "output": "README.md\napps\ncompose.registry.yaml\ncompose.yaml\nservices\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "ship-stack:1": {
+      "command": "cd ~/quest-ship && docker compose up --build -d && docker compose ps",
+      "output": " Image quest-ship-worker:dev Building\n Image quest-ship-api:dev Building\n Image quest-ship-web:dev Building\nNAME                  IMAGE                 STATUS\nquest-ship-api-1      quest-ship-api:dev    Up (healthy)\nquest-ship-web-1      quest-ship-web:dev    Up (healthy)\nquest-ship-worker-1   quest-ship-worker:dev Up (healthy)\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "ship-stack:2": {
+      "command": "curl -sS http://127.0.0.1:3100/api/healthz && echo && curl -sS -X POST http://127.0.0.1:3100/api/v1/jobs -H 'Content-Type: application/json' -d '{\"message\":\"hello ship\"}' && echo",
+      "output": "{\"service\":\"api\",\"status\":\"ok\",\"version\":\"dev\"}\n{\"jobId\":\"job_a1b2c3d4\",\"path\":[\"browser\",\"web\",\"api\",\"worker\"],\"input\":\"hello ship\",\"output\":\"[worker:dev] ship hello\",\"apiVersion\":\"dev\",\"workerVersion\":\"dev\",\"workerMs\":301}\n",
+      "exitCode": 0,
+      "ms": 550
+    },
+    "env-on-host:0": {
+      "command": "cd ~/quest-ship && cp -n .env.example .env 2>/dev/null; grep -q '^WORK_DELAY_MS=' .env && sed -i.bak 's/^WORK_DELAY_MS=.*/WORK_DELAY_MS=800/' .env || echo 'WORK_DELAY_MS=800' >> .env; grep WORK_DELAY_MS .env",
+      "output": "WORK_DELAY_MS=800\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "env-on-host:1": {
+      "command": "cd ~/quest-ship && docker compose up -d && sleep 2 && curl -sS -X POST http://127.0.0.1:3100/api/v1/jobs -H 'Content-Type: application/json' -d '{\"message\":\"env drill\"}' && echo",
+      "output": "{\"jobId\":\"job_e5f6a7b8\",\"path\":[\"browser\",\"web\",\"api\",\"worker\"],\"input\":\"env drill\",\"output\":\"[worker:dev] drill env\",\"apiVersion\":\"dev\",\"workerVersion\":\"dev\",\"workerMs\":805}\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "tunnel-access:0": {
+      "command": "echo 'gcloud compute ssh VM_NAME --tunnel-through-iap -- -L 3100:localhost:3100'\necho 'Then open http://127.0.0.1:3100 on your laptop while the tunnel stays up.'",
+      "output": "gcloud compute ssh VM_NAME --tunnel-through-iap -- -L 3100:localhost:3100\nThen open http://127.0.0.1:3100 on your laptop while the tunnel stays up.\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "tunnel-access:1": {
+      "command": "curl -sS -o /dev/null -w '%{http_code}\\n' http://127.0.0.1:3100/healthz",
+      "output": "200\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "registry-push:0": {
+      "command": "cd ~/quest-ship && APP_VERSION=v1 docker compose build && docker images 'quest-ship-*' --format '{{.Repository}}:{{.Tag}}'",
+      "output": " Image quest-ship-worker:v1 Built\n Image quest-ship-api:v1 Built\n Image quest-ship-web:v1 Built\nquest-ship-api:v1\nquest-ship-web:v1\nquest-ship-worker:v1\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "registry-push:1": {
+      "command": "OWNER=your-github-user\nTAG=v1\nfor S in web api worker; do\n  echo docker tag quest-ship-$S:$TAG ghcr.io/$OWNER/quest-ship-$S:$TAG\n  echo docker push ghcr.io/$OWNER/quest-ship-$S:$TAG\ndone",
+      "output": "docker tag quest-ship-web:v1 ghcr.io/your-github-user/quest-ship-web:v1\ndocker push ghcr.io/your-github-user/quest-ship-web:v1\ndocker tag quest-ship-api:v1 ghcr.io/your-github-user/quest-ship-api:v1\ndocker push ghcr.io/your-github-user/quest-ship-api:v1\ndocker tag quest-ship-worker:v1 ghcr.io/your-github-user/quest-ship-worker:v1\ndocker push ghcr.io/your-github-user/quest-ship-worker:v1\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "registry-pull:0": {
+      "command": "cd ~/quest-ship && echo 'Registry form:' && echo '  export GHCR_IMAGE_PREFIX=ghcr.io/OWNER APP_VERSION=v1' && echo '  docker compose -f compose.registry.yaml pull && docker compose -f compose.registry.yaml up -d' && echo 'Local practice without registry:' && APP_VERSION=v1 docker compose up -d && docker compose ps --format 'table {{.Name}}\\t{{.Image}}\\t{{.Status}}'",
+      "output": "Registry form:\n  export GHCR_IMAGE_PREFIX=ghcr.io/OWNER APP_VERSION=v1\n  docker compose -f compose.registry.yaml pull && docker compose -f compose.registry.yaml up -d\nLocal practice without registry:\nNAME                  IMAGE                STATUS\nquest-ship-api-1      quest-ship-api:v1    Up (healthy)\nquest-ship-web-1      quest-ship-web:v1    Up (healthy)\nquest-ship-worker-1   quest-ship-worker:v1 Up (healthy)\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "registry-pull:1": {
+      "command": "curl -sS http://127.0.0.1:3100/api/healthz && echo && curl -sS http://127.0.0.1:3100/version.json && echo",
+      "output": "{\"service\":\"api\",\"status\":\"ok\",\"version\":\"v1\"}\n{\"service\":\"web\",\"version\":\"v1\"}\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "version-rollback:0": {
+      "command": "cd ~/quest-ship && APP_VERSION=v2 docker compose up --build -d && sleep 2 && curl -sS http://127.0.0.1:3100/api/healthz && echo",
+      "output": " Container quest-ship-worker-1 Recreated\n Container quest-ship-api-1 Recreated\n Container quest-ship-web-1 Recreated\n{\"service\":\"api\",\"status\":\"ok\",\"version\":\"v2\"}\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "version-rollback:1": {
+      "command": "cd ~/quest-ship && APP_VERSION=v1 docker compose up -d && sleep 2 && curl -sS http://127.0.0.1:3100/api/healthz && echo && docker compose ps --format 'table {{.Name}}\\t{{.Image}}'",
+      "output": "{\"service\":\"api\",\"status\":\"ok\",\"version\":\"v1\"}\nNAME                  IMAGE\nquest-ship-api-1      quest-ship-api:v1\nquest-ship-web-1      quest-ship-web:v1\nquest-ship-worker-1   quest-ship-worker:v1\n",
+      "exitCode": 0,
+      "ms": 450
+    },
+    "build-where:0": {
+      "command": "printf '%s\\n' 'Build on laptop/CI when: image is heavy, VM is small, many servers need the same bits.' 'Build on VM when: stack is tiny, you are learning, or offline constraints block a registry.' 'Always: tag immutably, keep secrets out of images, prefer pull on the server.'",
+      "output": "Build on laptop/CI when: image is heavy, VM is small, many servers need the same bits.\nBuild on VM when: stack is tiny, you are learning, or offline constraints block a registry.\nAlways: tag immutably, keep secrets out of images, prefer pull on the server.\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "after-you-can-ship:0": {
+      "command": "cd ~/quest-ship && docker compose down && echo 'quest-ship stopped'",
+      "output": " Container quest-ship-web-1 Stopped\n Container quest-ship-api-1 Stopped\n Container quest-ship-worker-1 Stopped\nquest-ship stopped\n",
+      "exitCode": 0,
+      "ms": 350
+    },
+    "after-you-can-ship:1": {
+      "command": "echo 'Next for me: (registry push for real | HTTPS on VM | CI build | deeper K8s)'",
+      "output": "Next for me: (registry push for real | HTTPS on VM | CI build | deeper K8s)\n",
+      "exitCode": 0,
+      "ms": 450
     }
   }
 }
